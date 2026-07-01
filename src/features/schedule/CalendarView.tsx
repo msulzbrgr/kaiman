@@ -33,9 +33,13 @@ export default function CalendarView({
   const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
 
   useEffect(() => {
-    const handler = () => setBp(getBreakpoint(window.innerWidth))
+    let timer: ReturnType<typeof setTimeout>
+    const handler = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => setBp(getBreakpoint(window.innerWidth)), 150)
+    }
     window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
+    return () => { clearTimeout(timer); window.removeEventListener('resize', handler) }
   }, [])
 
   const isMobile = bp === 'mobile'
