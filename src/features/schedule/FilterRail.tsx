@@ -1,0 +1,96 @@
+import { useState } from 'react'
+import type { Person, Team } from '../../db/types'
+
+interface Props {
+  teams: Team[]
+  people: Person[]
+  selectedTeams: Set<number>
+  selectedPeople: Set<number>
+  showTraining: boolean
+  showGame: boolean
+  combineAnd: boolean
+  onToggleTeam: (id: number) => void
+  onTogglePerson: (id: number) => void
+  onSetType: (kind: 'training' | 'game', v: boolean) => void
+  onSetCombine: (v: boolean) => void
+  onClear: () => void
+  onCreateEvent: () => void
+}
+
+export default function FilterRail(p: Props) {
+  const [q, setQ] = useState('')
+  const filteredPeople = p.people.filter((pe) =>
+    pe.displayName.toLowerCase().includes(q.toLowerCase()),
+  )
+  const anyFilter = p.selectedTeams.size > 0 || p.selectedPeople.size > 0
+
+  return (
+    <div className="filter-rail">
+      <button className="btn primary" style={{ width: '100%', marginBottom: 14 }} onClick={p.onCreateEvent}>
+        + Neues Event
+      </button>
+      <div className="row">
+        <h3 style={{ flex: 1 }}>Filter</h3>
+        {anyFilter && (
+          <button className="btn sm" onClick={p.onClear}>Zurücksetzen</button>
+        )}
+      </div>
+
+      <h3>Event-Typ</h3>
+      <label className="check-row">
+        <input type="checkbox" checked={p.showTraining} onChange={(e) => p.onSetType('training', e.target.checked)} />
+        Training
+      </label>
+      <label className="check-row">
+        <input type="checkbox" checked={p.showGame} onChange={(e) => p.onSetType('game', e.target.checked)} />
+        Spiel
+      </label>
+
+      <h3>Teams</h3>
+      {p.teams.length === 0 && <p className="muted">Keine Teams</p>}
+      {p.teams.map((t) => (
+        <label className="check-row" key={t.id}>
+          <input
+            type="checkbox"
+            checked={p.selectedTeams.has(t.id!)}
+            onChange={() => p.onToggleTeam(t.id!)}
+          />
+          <span className="swatch" style={{ background: t.color }} />
+          {t.name}
+        </label>
+      ))}
+
+      <h3>Personen</h3>
+      <input
+        className="searchbox"
+        placeholder="Suchen…"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      {filteredPeople.map((pe) => (
+        <label className="check-row" key={pe.id}>
+          <input
+            type="checkbox"
+            checked={p.selectedPeople.has(pe.id!)}
+            onChange={() => p.onTogglePerson(pe.id!)}
+          />
+          {pe.displayName}
+        </label>
+      ))}
+
+      {p.selectedTeams.size > 0 && p.selectedPeople.size > 0 && (
+        <>
+          <h3>Verknüpfung</h3>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={p.combineAnd}
+              onChange={(e) => p.onSetCombine(e.target.checked)}
+            />
+            Team UND Person (sonst ODER)
+          </label>
+        </>
+      )}
+    </div>
+  )
+}
