@@ -7,7 +7,7 @@ liegen vollständig lokal im Browser (IndexedDB).
 ## Starten
 
 ```bash
-cd mih
+cd kaiman
 npm install            # einmalig
 npm run dev            # → http://localhost:5173
 ```
@@ -18,6 +18,16 @@ Statisches Build (kann von jedem statischen Server / lokal geöffnet werden):
 npm run build          # erzeugt dist/
 npm run preview
 ```
+
+## GitHub Pages
+
+Die App wird über `.github/workflows/static.yml` als statische Vite-Seite nach GitHub Pages
+deployt. Der Workflow installiert die Abhängigkeiten, baut `dist/` und veröffentlicht genau
+dieses Verzeichnis.
+
+Für die Veröffentlichung im Repository einmalig in GitHub **Settings → Pages** als Source
+**GitHub Actions** auswählen. Danach wird jeder Push auf `main` automatisch veröffentlicht;
+zusätzlich kann der Workflow manuell über den Actions-Tab gestartet werden.
 
 ## Funktionen
 
