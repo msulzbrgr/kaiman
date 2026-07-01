@@ -21,6 +21,8 @@ npm run preview
 
 ## GitHub Pages
 
+Die veröffentlichte App ist unter https://msulzbrgr.github.io/kaiman/ erreichbar.
+
 Die App wird über `.github/workflows/static.yml` als statische Vite-Seite nach GitHub Pages
 deployt. Der Workflow installiert die Abhängigkeiten, baut `dist/` und veröffentlicht genau
 dieses Verzeichnis.
