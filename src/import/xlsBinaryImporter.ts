@@ -27,9 +27,16 @@ function classifyHeader(h: string): string | null {
 /** Detect binary Excel files by magic bytes or .xlsx extension. */
 function isBinaryExcel(fileName: string, text: string): boolean {
   if (/\.xlsx$/i.test(fileName)) return true
-  // Binary .xls (BIFF) starts with the OLE2 magic bytes D0 CF 11 E0
-  // When decoded as UTF-8, the first bytes won't look like valid HTML.
-  if (/\.xls$/i.test(fileName) && !text.trimStart().startsWith('<')) return true
+  // Binary .xls (BIFF) starts with the OLE2 magic bytes D0 CF 11 E0.
+  // When decoded as UTF-8, these appear as the replacement char or garbled text.
+  // We check the filename matches .xls AND the content is not valid HTML/XML.
+  if (/\.xls$/i.test(fileName)) {
+    const trimmed = text.trimStart()
+    // OLE2 magic: first bytes are 0xD0 0xCF 0x11 0xE0
+    if (trimmed.charCodeAt(0) === 0xD0 || trimmed.charCodeAt(0) === 0xFFFD) return true
+    // Not HTML-like content = likely binary
+    if (!trimmed.startsWith('<')) return true
+  }
   return false
 }
 
