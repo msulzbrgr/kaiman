@@ -60,7 +60,8 @@ export default function TeamsPage() {
         <button className="btn primary" onClick={createTeam}>+ Team</button>
       </div>
 
-      <table className="grid">
+      <div className="table-scroll-wrap">
+        <table className="grid">
         <thead>
           <tr><th>Farbe</th><th>Name</th><th>Altersgruppe</th><th>Kader</th><th>Aktionen</th></tr>
         </thead>
@@ -118,7 +119,8 @@ export default function TeamsPage() {
             <tr><td colSpan={5} className="muted">Noch keine Teams. Importiere eine Datei oder lege eines an.</td></tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   )
 }
