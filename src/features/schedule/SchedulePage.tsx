@@ -24,6 +24,7 @@ export default function SchedulePage() {
   const [showGame, setShowGame] = useState(true)
   const [combineAnd, setCombineAnd] = useState(false)
   const [openId, setOpenId] = useState<number | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
 
@@ -120,6 +121,7 @@ export default function SchedulePage() {
         showTraining={showTraining}
         showGame={showGame}
         combineAnd={combineAnd}
+        mobileOpen={filterOpen}
         onToggleTeam={(id) => setSelectedTeams((s) => toggle(s, id))}
         onTogglePerson={(id) => setSelectedPeople((s) => toggle(s, id))}
         onSetType={(k, v) => (k === 'training' ? setShowTraining(v) : setShowGame(v))}
@@ -129,8 +131,22 @@ export default function SchedulePage() {
           setSelectedPeople(new Set())
         }}
         onCreateEvent={createEvent}
+        onMobileClose={() => setFilterOpen(false)}
       />
-      <CalendarView events={fcEvents} onSelect={setOpenId} />
+      {filterOpen && (
+        <div className="filter-rail-backdrop" onClick={() => setFilterOpen(false)} />
+      )}
+      <div className="schedule-main">
+        <div className="schedule-mobile-bar">
+          <button className="btn sm" onClick={() => setFilterOpen(true)}>☰ Filter</button>
+          {(selectedTeams.size > 0 || selectedPeople.size > 0) && (
+            <span className="badge">{selectedTeams.size + selectedPeople.size} aktiv</span>
+          )}
+          <span className="spacer" />
+          <button className="btn sm primary" onClick={createEvent}>+ Event</button>
+        </div>
+        <CalendarView events={fcEvents} onSelect={setOpenId} />
+      </div>
       {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}
     </div>
   )

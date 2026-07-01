@@ -9,12 +9,14 @@ interface Props {
   showTraining: boolean
   showGame: boolean
   combineAnd: boolean
+  mobileOpen: boolean
   onToggleTeam: (id: number) => void
   onTogglePerson: (id: number) => void
   onSetType: (kind: 'training' | 'game', v: boolean) => void
   onSetCombine: (v: boolean) => void
   onClear: () => void
   onCreateEvent: () => void
+  onMobileClose: () => void
 }
 
 export default function FilterRail(p: Props) {
@@ -25,7 +27,13 @@ export default function FilterRail(p: Props) {
   const anyFilter = p.selectedTeams.size > 0 || p.selectedPeople.size > 0
 
   return (
-    <div className="filter-rail">
+    <div className={`filter-rail${p.mobileOpen ? ' mobile-open' : ''}`}>
+      <div className="filter-rail-header">
+        <div className="filter-drag-handle" />
+        <div className="filter-close-row">
+          <button className="btn sm" onClick={p.onMobileClose}>✕ Schließen</button>
+        </div>
+      </div>
       <button className="btn primary" style={{ width: '100%', marginBottom: 14 }} onClick={p.onCreateEvent}>
         + Neues Event
       </button>

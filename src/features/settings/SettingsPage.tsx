@@ -71,7 +71,8 @@ export default function SettingsPage() {
         Rollen für die Zuordnung von Personen zu Events. Standard-Rollen können umbenannt,
         aber nicht gelöscht werden.
       </p>
-      <table className="grid" style={{ maxWidth: 560 }}>
+      <div className="table-scroll-wrap">
+        <table className="grid" style={{ maxWidth: 560 }}>
         <thead><tr><th>Reihenfolge</th><th>Bezeichnung</th><th></th></tr></thead>
         <tbody>
           {roles.map((r, i) => (
@@ -93,7 +94,8 @@ export default function SettingsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <button className="btn" style={{ marginTop: 10 }} onClick={addRole}>+ Rolle</button>
 
       <h3 style={{ marginTop: 28 }}>Datensicherung</h3>

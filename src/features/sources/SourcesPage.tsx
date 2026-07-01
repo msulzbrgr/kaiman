@@ -41,28 +41,30 @@ export default function SourcesPage() {
       {sources.length === 0 ? (
         <p className="muted">Noch keine Quellen importiert.</p>
       ) : (
-        <table className="grid">
-          <thead>
-            <tr>
-              <th>Datei</th><th>Typ</th><th>Events</th><th>Importiert</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sources.map((s) => (
-              <tr key={s.id}>
-                <td>{s.fileName}</td>
-                <td><span className="badge">{s.kind}</span></td>
-                <td>{eventCounts[s.id!] ?? 0}</td>
-                <td>{fmtDate(s.importedAt)} {fmtTime(s.importedAt)}</td>
-                <td>
-                  <button className="btn sm danger" onClick={() => removeSource(s.id!)}>
-                    Entfernen
-                  </button>
-                </td>
+        <div className="table-scroll-wrap">
+          <table className="grid">
+            <thead>
+              <tr>
+                <th>Datei</th><th>Typ</th><th>Events</th><th>Importiert</th><th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sources.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.fileName}</td>
+                  <td><span className="badge">{s.kind}</span></td>
+                  <td>{eventCounts[s.id!] ?? 0}</td>
+                  <td>{fmtDate(s.importedAt)} {fmtTime(s.importedAt)}</td>
+                  <td>
+                    <button className="btn sm danger" onClick={() => removeSource(s.id!)}>
+                      Entfernen
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}

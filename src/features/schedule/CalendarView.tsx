@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -14,6 +15,14 @@ export interface FcEvent {
   cancelled: boolean
 }
 
+type Breakpoint = 'mobile' | 'tablet' | 'desktop'
+
+function getBreakpoint(w: number): Breakpoint {
+  if (w < 640) return 'mobile'
+  if (w < 1024) return 'tablet'
+  return 'desktop'
+}
+
 export default function CalendarView({
   events,
   onSelect,
@@ -21,20 +30,33 @@ export default function CalendarView({
   events: FcEvent[]
   onSelect: (id: number) => void
 }) {
+  const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
+
+  useEffect(() => {
+    const handler = () => setBp(getBreakpoint(window.innerWidth))
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
+  const isMobile = bp === 'mobile'
+  const isTablet = bp === 'tablet'
+
+  const headerToolbar = isMobile
+    ? { left: 'prev,next', center: 'title', right: 'listWeek,listMonth' }
+    : isTablet
+    ? { left: 'prev,next today', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth,listMonth' }
+    : { left: 'prev,next today', center: 'title', right: 'timeGridDay,workWeek,timeGridWeek,twoWeek,dayGridMonth,listMonth' }
+
   return (
     <div className="calendar-wrap">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, multiMonthPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
+        initialView={isMobile ? 'listWeek' : 'dayGridMonth'}
         firstDay={1}
         locale="de"
         height="100%"
         nowIndicator
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'timeGridDay,workWeek,timeGridWeek,twoWeek,dayGridMonth,listMonth',
-        }}
+        headerToolbar={headerToolbar}
         buttonText={{
           today: 'Heute',
           month: 'Monat',

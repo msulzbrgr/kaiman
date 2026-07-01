@@ -70,10 +70,11 @@ export default function PeoplePage() {
         <button className="btn primary" onClick={createPerson}>+ Person</button>
       </div>
 
-      <table className="grid">
-        <thead>
-          <tr><th>Name</th><th>Teams</th><th>Einsätze</th><th>Aktionen</th></tr>
-        </thead>
+      <div className="table-scroll-wrap">
+        <table className="grid">
+          <thead>
+            <tr><th>Name</th><th>Teams</th><th>Einsätze</th><th>Aktionen</th></tr>
+          </thead>
         <tbody>
           {filtered.map((p) => (
             <tr key={p.id}>
@@ -114,7 +115,8 @@ export default function PeoplePage() {
             <tr><td colSpan={4} className="muted">Keine Personen.</td></tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   )
 }
