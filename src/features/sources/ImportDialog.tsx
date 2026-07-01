@@ -6,6 +6,7 @@ import type { ImportResult } from '../../import/SourceImporter'
 interface Staged {
   fileName: string
   text: string
+  buffer: ArrayBuffer
   kind: string
   label: string
   result: ImportResult
@@ -13,11 +14,11 @@ interface Staged {
   error?: string
 }
 
-async function readFile(file: File): Promise<string> {
+async function readFile(file: File): Promise<{ text: string; buffer: ArrayBuffer }> {
   const buf = await file.arrayBuffer()
   // Decode as UTF-8 and strip BOM.
   const text = new TextDecoder('utf-8').decode(buf)
-  return text.replace(/^﻿/, '')
+  return { text: text.replace(/^﻿/, ''), buffer: buf }
 }
 
 export default function ImportDialog({ onClose }: { onClose: () => void }) {
@@ -29,12 +30,13 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
     const list = Array.from(files)
     const next: Staged[] = []
     for (const file of list) {
-      const text = await readFile(file)
+      const { text, buffer } = await readFile(file)
       const importer = pickImporter(file.name, text)
       if (!importer) {
         next.push({
           fileName: file.name,
           text,
+          buffer,
           kind: '',
           label: '',
           result: { events: [], teamNames: [], peopleNames: [] },
@@ -43,11 +45,12 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
         })
         continue
       }
-      const result = importer.parse(text)
+      const result = await importer.parse(text, buffer)
       const preview = await previewImport(result, importer.kind, file.name)
       next.push({
         fileName: file.name,
         text,
+        buffer,
         kind: importer.kind,
         label: file.name,
         result,
@@ -76,7 +79,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
     <div className="drawer-backdrop" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <h2>Importieren</h2>
-        <p className="muted">XLS-Dateien (HTML-Tabelle) auswählen oder hierher ziehen.</p>
+        <p className="muted">XLS- oder XLSX-Dateien auswählen oder hierher ziehen.</p>
 
         <div
           className={'dropzone' + (over ? ' over' : '')}
@@ -97,7 +100,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
             <input
               type="file"
               multiple
-              accept=".xls,.html,.htm"
+              accept=".xls,.xlsx,.html,.htm"
               style={{ display: 'none' }}
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
             />

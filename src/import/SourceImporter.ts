@@ -35,5 +35,5 @@ export interface SourceImporter {
   label: string
   /** Quick check whether this importer can handle the file. */
   detect(fileName: string, text: string): boolean
-  parse(text: string): ImportResult
+  parse(text: string, buffer?: ArrayBuffer): ImportResult | Promise<ImportResult>
 }
