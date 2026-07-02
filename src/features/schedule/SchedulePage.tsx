@@ -34,6 +34,7 @@ export default function SchedulePage() {
   const [combineAnd, setCombineAnd] = useState(false)
   const [openId, setOpenId] = useState<number | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null)
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
 
@@ -86,13 +87,22 @@ export default function SchedulePage() {
   }, [events, peopleByEvent, teamById, selectedTeams, selectedPeople, showTraining, showGame, combineAnd])
 
   const slotRange = useMemo(() => {
-    if (fcEvents.length === 0) return { min: '06:00:00', max: '23:00:00' }
+    const eventsInRange =
+      visibleRange === null
+        ? fcEvents
+        : fcEvents.filter((event) => {
+            const eventStart = new Date(event.start)
+            const eventEnd = new Date(event.end ?? event.start)
+            return eventEnd > visibleRange.start && eventStart < visibleRange.end
+          })
+
+    if (eventsInRange.length === 0) return { min: '06:00:00', max: '23:00:00' }
 
     let firstStart = Number.POSITIVE_INFINITY
     let lastEnd = Number.NEGATIVE_INFINITY
     let hasOvernightEvent = false
 
-    for (const event of fcEvents) {
+    for (const event of eventsInRange) {
       const start = new Date(event.start)
       const end = new Date(event.end ?? event.start)
       if (start.toDateString() !== end.toDateString()) {
@@ -113,7 +123,7 @@ export default function SchedulePage() {
       min: toSlotTime(firstStart - SLOT_BUFFER_MINUTES),
       max: toSlotTime(lastEnd + SLOT_BUFFER_MINUTES),
     }
-  }, [fcEvents])
+  }, [fcEvents, visibleRange])
 
   const toggle = (set: Set<number>, id: number) => {
     const next = new Set(set)
@@ -189,6 +199,7 @@ export default function SchedulePage() {
           onSelect={setOpenId}
           slotMinTime={slotRange.min}
           slotMaxTime={slotRange.max}
+          onVisibleRangeChange={setVisibleRange}
         />
       </div>
       {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}

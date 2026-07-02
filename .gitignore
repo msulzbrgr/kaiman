@@ -2,3 +2,5 @@ node_modules/
 dist/
 .npm-cache/
 *.log
+playwright-report/
+test-results/
