@@ -154,12 +154,20 @@ async function upsertEvent(
 
   if (existing?.id) {
     // Update schedule fields, re-activate, keep team + manual assignments.
-    await db.events.update(existing.id, { ...fields, teamId, status: 'active' })
+    await db.events.update(existing.id, {
+      ...fields,
+      teamId,
+      status: 'active',
+      originalStart: ev.start,
+      originalEnd: ev.end,
+    })
     return existing.id
   }
   return db.events.add({
     sourceId,
     sourceKey: ev.sourceKey,
+    originalStart: ev.start,
+    originalEnd: ev.end,
     teamId,
     status: 'active',
     manual: false,

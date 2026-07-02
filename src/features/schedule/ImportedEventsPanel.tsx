@@ -7,13 +7,29 @@ import type { ScheduleEvent } from '../../db/types'
 
 interface Props {
   onSelect: (id: number) => void
+  selectedId: number | null
+  onUndo: () => void
+  onRedo: () => void
+  onResetSelected: () => void
+  canUndo: boolean
+  canRedo: boolean
+  canResetSelected: boolean
 }
 
 const DEFAULT_DURATION_MS = 90 * 60 * 1000
 const MIN_EVENT_DURATION_MINUTES = 15
 const MS_PER_MINUTE = 60_000
 
-export default function ImportedEventsPanel({ onSelect }: Props) {
+export default function ImportedEventsPanel({
+  onSelect,
+  selectedId,
+  onUndo,
+  onRedo,
+  onResetSelected,
+  canUndo,
+  canRedo,
+  canResetSelected,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const events = useLiveQuery(
@@ -55,6 +71,10 @@ export default function ImportedEventsPanel({ onSelect }: Props) {
       <div className="imported-panel-header">
         <span className="imported-panel-title">Importierter Spielplan</span>
         <span className="muted imported-panel-hint">Karte in den Kalender ziehen zum Verschieben</span>
+        <span className="spacer" />
+        <button className="btn sm" disabled={!canUndo} onClick={onUndo}>↶ Undo</button>
+        <button className="btn sm" disabled={!canRedo} onClick={onRedo}>↷ Redo</button>
+        <button className="btn sm" disabled={!canResetSelected} onClick={onResetSelected}>Reset Karte</button>
       </div>
       {grouped.length === 0 ? (
         <p className="muted" style={{ padding: '0 14px', margin: '8px 0' }}>
@@ -83,7 +103,7 @@ export default function ImportedEventsPanel({ onSelect }: Props) {
                   return (
                     <div
                       key={e.id}
-                      className={`import-card${e.status === 'cancelled' ? ' cancelled' : ''}`}
+                      className={`import-card${e.status === 'cancelled' ? ' cancelled' : ''}${selectedId === e.id ? ' selected' : ''}`}
                       style={{ borderLeftColor: color } as React.CSSProperties}
                       data-id={String(e.id)}
                       data-title={title}

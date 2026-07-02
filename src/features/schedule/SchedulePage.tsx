@@ -14,6 +14,13 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
+interface EventTimeChange {
+  eventId: number
+  beforeStart: string | null
+  beforeEnd: string | null
+  afterStart: string | null
+  afterEnd: string | null
+}
 
 function toSlotTime(totalMinutes: number): string {
   const clamped = Math.min(Math.max(totalMinutes, 0), 24 * 60)
@@ -34,6 +41,9 @@ export default function SchedulePage() {
   const [showGame, setShowGame] = useState(true)
   const [combineAnd, setCombineAnd] = useState(false)
   const [openId, setOpenId] = useState<number | null>(null)
+  const [selectedImportedEventId, setSelectedImportedEventId] = useState<number | null>(null)
+  const [undoStack, setUndoStack] = useState<EventTimeChange[]>([])
+  const [redoStack, setRedoStack] = useState<EventTimeChange[]>([])
   const [filterOpen, setFilterOpen] = useState(false)
   const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null)
 
@@ -133,10 +143,7 @@ export default function SchedulePage() {
   }
 
   async function handleEventUpdate(eventId: number, start: Date, end: Date | null) {
-    await db.events.update(eventId, {
-      start: start.toISOString(),
-      end: end ? end.toISOString() : null,
-    })
+    await updateEventTimeWithHistory(eventId, start.toISOString(), end ? end.toISOString() : null)
   }
 
   async function handleExternalDrop(draggedEl: HTMLElement, newStart: Date) {
@@ -148,10 +155,75 @@ export default function SchedulePage() {
     const oldEnd = event.end ? new Date(event.end) : null
     const durationMs = oldEnd ? oldEnd.getTime() - oldStart.getTime() : 0
     const newEnd = durationMs > 0 ? new Date(newStart.getTime() + durationMs) : null
-    await db.events.update(eventId, {
-      start: newStart.toISOString(),
-      end: newEnd ? newEnd.toISOString() : event.end,
+    await updateEventTimeWithHistory(
+      eventId,
+      newStart.toISOString(),
+      newEnd ? newEnd.toISOString() : event.end,
+    )
+  }
+
+  async function updateEventTimeWithHistory(
+    eventId: number,
+    nextStart: string | null,
+    nextEnd: string | null,
+  ): Promise<void> {
+    const current = await db.events.get(eventId)
+    if (!current) return
+    const beforeStart = current.start
+    const beforeEnd = current.end
+    if (beforeStart === nextStart && beforeEnd === nextEnd) return
+
+    const patch: { start: string | null; end: string | null; originalStart?: string | null; originalEnd?: string | null } = {
+      start: nextStart,
+      end: nextEnd,
+    }
+    if (current.sourceId !== null && !current.originalStart && current.start) {
+      patch.originalStart = current.start
+      patch.originalEnd = current.end
+    }
+    await db.events.update(eventId, patch)
+
+    setUndoStack((stack) => [
+      ...stack,
+      { eventId, beforeStart, beforeEnd, afterStart: nextStart, afterEnd: nextEnd },
+    ])
+    setRedoStack([])
+  }
+
+  async function undoMove() {
+    const change = undoStack[undoStack.length - 1]
+    if (!change) return
+    await db.events.update(change.eventId, {
+      start: change.beforeStart,
+      end: change.beforeEnd,
     })
+    setUndoStack((stack) => stack.slice(0, -1))
+    setRedoStack((stack) => [...stack, change])
+  }
+
+  async function redoMove() {
+    const change = redoStack[redoStack.length - 1]
+    if (!change) return
+    await db.events.update(change.eventId, {
+      start: change.afterStart,
+      end: change.afterEnd,
+    })
+    setRedoStack((stack) => stack.slice(0, -1))
+    setUndoStack((stack) => [...stack, change])
+  }
+
+  async function resetSelectedImportedCard() {
+    if (
+      !selectedImportedEvent ||
+      selectedImportedEvent.sourceId === null ||
+      !selectedImportedEvent.originalStart
+    ) return
+
+    await updateEventTimeWithHistory(
+      selectedImportedEvent.id!,
+      selectedImportedEvent.originalStart,
+      selectedImportedEvent.originalEnd,
+    )
   }
 
   async function createEvent() {
@@ -166,6 +238,8 @@ export default function SchedulePage() {
     const id = await db.events.add({
       sourceId: null,
       sourceKey: 'manual-' + start.toISOString(),
+      originalStart: null,
+      originalEnd: null,
       teamId,
       type: 'training',
       art: '',
@@ -232,10 +306,31 @@ export default function SchedulePage() {
           />
         </div>
         <div className="schedule-main-lower">
-          <ImportedEventsPanel onSelect={setOpenId} />
+          <ImportedEventsPanel
+            onSelect={(id) => {
+              setSelectedImportedEventId(id)
+              setOpenId(id)
+            }}
+            selectedId={selectedImportedEventId}
+            onUndo={undoMove}
+            onRedo={redoMove}
+            onResetSelected={resetSelectedImportedCard}
+            canUndo={undoStack.length > 0}
+            canRedo={redoStack.length > 0}
+            canResetSelected={
+              !!selectedImportedEvent &&
+              selectedImportedEvent.sourceId !== null &&
+              !!selectedImportedEvent.originalStart &&
+              (selectedImportedEvent.start !== selectedImportedEvent.originalStart ||
+                selectedImportedEvent.end !== selectedImportedEvent.originalEnd)
+            }
+          />
         </div>
       </div>
       {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}
     </div>
   )
 }
+  const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
+  const selectedImportedEvent =
+    selectedImportedEventId == null ? null : eventById.get(selectedImportedEventId) ?? null

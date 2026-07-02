@@ -45,6 +45,8 @@ export interface ScheduleEvent {
   id?: number
   sourceId: number | null
   sourceKey: string // date|teamNameKey|startTime — stable merge key
+  originalStart: string | null // imported baseline start (for reset/undo use-cases)
+  originalEnd: string | null // imported baseline end (for reset/undo use-cases)
   teamId: number
   type: EventType
   art: string // Eistraining / Trockentraining / Freundschaft / ...
