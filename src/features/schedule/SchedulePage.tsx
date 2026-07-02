@@ -195,7 +195,9 @@ export default function SchedulePage() {
       newStart.toISOString(),
       newEnd ? newEnd.toISOString() : event.end,
     )
-    setSelectedImportedEventId(eventId)
+    if (event.sourceId != null) {
+      setSelectedImportedEventId(eventId)
+    }
   }
 
   async function updateEventTimeWithHistory(
