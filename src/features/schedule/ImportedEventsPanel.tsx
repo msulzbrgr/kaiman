@@ -72,8 +72,8 @@ export default function ImportedEventsPanel({
         <span className="imported-panel-title">Importierter Spielplan</span>
         <span className="muted imported-panel-hint">Karte in den Kalender ziehen zum Verschieben</span>
         <span className="spacer" />
-        <button className="btn sm" disabled={!canUndo} onClick={onUndo}>↶ Undo</button>
-        <button className="btn sm" disabled={!canRedo} onClick={onRedo}>↷ Redo</button>
+        <button className="btn sm" aria-label="Undo last move" disabled={!canUndo} onClick={onUndo}>↶ Undo</button>
+        <button className="btn sm" aria-label="Redo last move" disabled={!canRedo} onClick={onRedo}>↷ Redo</button>
         <button className="btn sm" disabled={!canResetSelected} onClick={onResetSelected}>Reset Karte</button>
       </div>
       {grouped.length === 0 ? (

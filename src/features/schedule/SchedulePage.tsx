@@ -180,7 +180,7 @@ export default function SchedulePage() {
       start: nextStart,
       end: nextEnd,
     }
-    if (current.sourceId !== null && !current.originalStart && current.start) {
+    if (current.sourceId !== null && current.originalStart == null && current.start) {
       patch.originalStart = current.start
       patch.originalEnd = current.end
     }
@@ -219,7 +219,7 @@ export default function SchedulePage() {
     if (
       !selectedImportedEvent ||
       selectedImportedEvent.sourceId === null ||
-      !selectedImportedEvent.originalStart
+      selectedImportedEvent.originalStart == null
     ) return
 
     await updateEventTimeWithHistory(
