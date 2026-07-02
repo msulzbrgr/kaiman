@@ -100,7 +100,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
             <input
               type="file"
               multiple
-              accept=".xls,.xlsx,.html,.htm"
+              accept=".xls,.xlsx,.html,.htm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/html"
               style={{ display: 'none' }}
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
             />
