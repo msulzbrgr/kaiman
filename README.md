@@ -6,6 +6,8 @@ liegen vollständig lokal im Browser (IndexedDB).
 
 ## Starten
 
+Benötigt: **Node.js 22.12+** (siehe `.nvmrc`).
+
 ```bash
 cd kaiman
 npm install            # einmalig
