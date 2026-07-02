@@ -74,7 +74,14 @@ export default function ImportedEventsPanel({
         <span className="spacer" />
         <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
         <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
-        <button className="btn sm" disabled={!canResetSelected} onClick={onResetSelected}>Reset Karte</button>
+        <button
+          className="btn sm"
+          aria-label="Ausgewählte Karte auf Ursprungszeit zurücksetzen"
+          disabled={!canResetSelected}
+          onClick={onResetSelected}
+        >
+          Karte zurücksetzen
+        </button>
       </div>
       {grouped.length === 0 ? (
         <p className="muted" style={{ padding: '0 14px', margin: '8px 0' }}>

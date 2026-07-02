@@ -22,6 +22,13 @@ interface EventTimeChange {
   afterEnd: string | null
 }
 
+interface EventTimePatch {
+  start: string | null
+  end: string | null
+  originalStart?: string | null
+  originalEnd?: string | null
+}
+
 function toSlotTime(totalMinutes: number): string {
   const clamped = Math.min(Math.max(totalMinutes, 0), 24 * 60)
   const hours = Math.floor(clamped / 60)
@@ -197,7 +204,7 @@ export default function SchedulePage() {
     const beforeEnd = current.end
     if (beforeStart === nextStart && beforeEnd === nextEnd) return
 
-    const patch: { start: string | null; end: string | null; originalStart?: string | null; originalEnd?: string | null } = {
+    const patch: EventTimePatch = {
       start: nextStart,
       end: nextEnd,
     }
