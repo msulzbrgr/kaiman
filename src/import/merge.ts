@@ -73,7 +73,7 @@ export async function previewImport(
   }
 }
 
-const SCHEDULE_FIELDS: (keyof ScheduleEvent)[] = [
+const SCHEDULE_FIELDS = [
   'type',
   'art',
   'opponent',
@@ -84,7 +84,7 @@ const SCHEDULE_FIELDS: (keyof ScheduleEvent)[] = [
   'start',
   'end',
   'remarks',
-]
+] as const satisfies readonly (keyof ScheduleEvent)[]
 
 export async function commitImport(
   result: ImportResult,
@@ -147,7 +147,7 @@ async function upsertEvent(
     .equals([sourceId, ev.sourceKey])
     .first()
 
-  const fields: Partial<ScheduleEvent> = {}
+  const fields = {} as Pick<ScheduleEvent, (typeof SCHEDULE_FIELDS)[number]>
   for (const f of SCHEDULE_FIELDS) {
     ;(fields as any)[f] = (ev as any)[f]
   }
@@ -171,6 +171,6 @@ async function upsertEvent(
     teamId,
     status: 'active',
     manual: false,
-    ...(fields as Omit<ScheduleEvent, 'id' | 'sourceId' | 'sourceKey' | 'teamId' | 'status' | 'manual'>),
+    ...fields,
   } as ScheduleEvent)
 }

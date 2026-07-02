@@ -48,6 +48,9 @@ export default function SchedulePage() {
   const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null)
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
+  const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
+  const selectedImportedEvent =
+    selectedImportedEventId == null ? null : eventById.get(selectedImportedEventId) ?? null
 
   // eventId -> set of personIds assigned
   const peopleByEvent = useMemo(() => {
@@ -331,6 +334,3 @@ export default function SchedulePage() {
     </div>
   )
 }
-  const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
-  const selectedImportedEvent =
-    selectedImportedEventId == null ? null : eventById.get(selectedImportedEventId) ?? null
