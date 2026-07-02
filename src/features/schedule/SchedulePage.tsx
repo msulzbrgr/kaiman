@@ -88,7 +88,7 @@ export default function SchedulePage() {
 
   const slotRange = useMemo(() => {
     const eventsInRange =
-      visibleRange == null
+      visibleRange === null
         ? fcEvents
         : fcEvents.filter((event) => {
             const eventStart = new Date(event.start)
