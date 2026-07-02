@@ -9,6 +9,10 @@ interface Props {
   onSelect: (id: number) => void
 }
 
+const DEFAULT_DURATION_MS = 90 * 60 * 1000
+const MIN_EVENT_DURATION_MINUTES = 15
+const MS_PER_MINUTE = 60_000
+
 export default function ImportedEventsPanel({ onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -67,8 +71,8 @@ export default function ImportedEventsPanel({ onSelect }: Props) {
                   const durationMs =
                     e.start && e.end
                       ? new Date(e.end).getTime() - new Date(e.start).getTime()
-                      : 90 * 60 * 1000
-                  const durationMin = Math.max(15, Math.round(durationMs / 60000))
+                      : DEFAULT_DURATION_MS
+                  const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
                   const title =
                     e.type === 'game'

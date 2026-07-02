@@ -132,14 +132,7 @@ export default function SchedulePage() {
     return next
   }
 
-  async function handleEventDrop(eventId: number, start: Date, end: Date | null) {
-    await db.events.update(eventId, {
-      start: start.toISOString(),
-      end: end ? end.toISOString() : null,
-    })
-  }
-
-  async function handleEventResize(eventId: number, start: Date, end: Date | null) {
+  async function handleEventUpdate(eventId: number, start: Date, end: Date | null) {
     await db.events.update(eventId, {
       start: start.toISOString(),
       end: end ? end.toISOString() : null,
@@ -233,8 +226,8 @@ export default function SchedulePage() {
             onVisibleRangeChange={setVisibleRange}
             editable
             droppable
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
+            onEventDrop={handleEventUpdate}
+            onEventResize={handleEventUpdate}
             onExternalDrop={handleExternalDrop}
           />
         </div>
