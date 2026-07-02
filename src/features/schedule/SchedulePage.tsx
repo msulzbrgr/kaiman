@@ -95,10 +95,13 @@ export default function SchedulePage() {
     for (const event of fcEvents) {
       const start = new Date(event.start)
       const end = new Date(event.end ?? event.start)
+      if (start.toDateString() !== end.toDateString()) {
+        hasOvernightEvent = true
+        break
+      }
 
       const startMinutes = start.getHours() * 60 + start.getMinutes()
       const endMinutes = end.getHours() * 60 + end.getMinutes()
-      hasOvernightEvent = hasOvernightEvent || end.getTime() - start.getTime() > 24 * 60 * 60 * 1000 || endMinutes < startMinutes
 
       firstStart = Math.min(firstStart, startMinutes)
       lastEnd = Math.max(lastEnd, endMinutes)
