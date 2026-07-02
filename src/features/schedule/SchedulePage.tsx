@@ -12,6 +12,8 @@ function shortTeamLabel(name: string): string {
   return /U9|U12/i.test(stripped) ? stripped : 'U14'
 }
 
+const SLOT_BUFFER_MINUTES = 60
+
 function toSlotTime(totalMinutes: number): string {
   const clamped = Math.min(Math.max(totalMinutes, 0), 24 * 60)
   const hours = Math.floor(clamped / 60)
@@ -88,6 +90,7 @@ export default function SchedulePage() {
 
     let firstStart = Number.POSITIVE_INFINITY
     let lastEnd = Number.NEGATIVE_INFINITY
+    let hasOvernightEvent = false
 
     for (const event of fcEvents) {
       const start = new Date(event.start)
@@ -95,14 +98,17 @@ export default function SchedulePage() {
 
       const startMinutes = start.getHours() * 60 + start.getMinutes()
       const endMinutes = end.getHours() * 60 + end.getMinutes()
+      hasOvernightEvent = hasOvernightEvent || end.getTime() - start.getTime() > 24 * 60 * 60 * 1000 || endMinutes < startMinutes
 
       firstStart = Math.min(firstStart, startMinutes)
       lastEnd = Math.max(lastEnd, endMinutes)
     }
 
+    if (hasOvernightEvent) return { min: '00:00:00', max: '24:00:00' }
+
     return {
-      min: toSlotTime(firstStart - 60),
-      max: toSlotTime(lastEnd + 60),
+      min: toSlotTime(firstStart - SLOT_BUFFER_MINUTES),
+      max: toSlotTime(lastEnd + SLOT_BUFFER_MINUTES),
     }
   }, [fcEvents])
 
