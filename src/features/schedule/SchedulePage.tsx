@@ -4,6 +4,7 @@ import { db } from '../../db/db'
 import FilterRail from './FilterRail'
 import CalendarView, { type FcEvent } from './CalendarView'
 import EventDrawer from './EventDrawer'
+import ImportedEventsPanel from './ImportedEventsPanel'
 
 // Drop the club prefix from the team name for compact agenda titles:
 // "EHC Zuchwil Regio U9"/"…U12" -> "U9"/"U12"; anything else -> "U14".
@@ -131,6 +132,35 @@ export default function SchedulePage() {
     return next
   }
 
+  async function handleEventDrop(eventId: number, start: Date, end: Date | null) {
+    await db.events.update(eventId, {
+      start: start.toISOString(),
+      end: end ? end.toISOString() : null,
+    })
+  }
+
+  async function handleEventResize(eventId: number, start: Date, end: Date | null) {
+    await db.events.update(eventId, {
+      start: start.toISOString(),
+      end: end ? end.toISOString() : null,
+    })
+  }
+
+  async function handleExternalDrop(draggedEl: HTMLElement, newStart: Date) {
+    const eventId = Number(draggedEl.dataset.id)
+    if (!eventId) return
+    const event = await db.events.get(eventId)
+    if (!event?.start) return
+    const oldStart = new Date(event.start)
+    const oldEnd = event.end ? new Date(event.end) : null
+    const durationMs = oldEnd ? oldEnd.getTime() - oldStart.getTime() : 0
+    const newEnd = durationMs > 0 ? new Date(newStart.getTime() + durationMs) : null
+    await db.events.update(eventId, {
+      start: newStart.toISOString(),
+      end: newEnd ? newEnd.toISOString() : event.end,
+    })
+  }
+
   async function createEvent() {
     const teamId = [...selectedTeams][0] ?? teams[0]?.id
     if (!teamId) {
@@ -194,13 +224,23 @@ export default function SchedulePage() {
           <span className="spacer" />
           <button className="btn sm primary" onClick={createEvent}>+ Event</button>
         </div>
-        <CalendarView
-          events={fcEvents}
-          onSelect={setOpenId}
-          slotMinTime={slotRange.min}
-          slotMaxTime={slotRange.max}
-          onVisibleRangeChange={setVisibleRange}
-        />
+        <div className="schedule-main-upper">
+          <CalendarView
+            events={fcEvents}
+            onSelect={setOpenId}
+            slotMinTime={slotRange.min}
+            slotMaxTime={slotRange.max}
+            onVisibleRangeChange={setVisibleRange}
+            editable
+            droppable
+            onEventDrop={handleEventDrop}
+            onEventResize={handleEventResize}
+            onExternalDrop={handleExternalDrop}
+          />
+        </div>
+        <div className="schedule-main-lower">
+          <ImportedEventsPanel onSelect={setOpenId} />
+        </div>
       </div>
       {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}
     </div>

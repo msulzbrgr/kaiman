@@ -226,13 +226,131 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   .filter-rail-backdrop { display: none; }
 }
 
-/* schedule-main: flex column that holds the mobile-bar + calendar */
+/* schedule-main: flex column that holds the mobile-bar + calendar + imported panel */
 .schedule-main {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.schedule-main-upper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-main-lower {
+  height: 220px;
+  flex-shrink: 0;
+  border-top: 2px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* Imported events panel */
+.imported-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.imported-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.imported-panel-title {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.imported-panel-hint {
+  font-size: 11px;
+}
+
+.imported-panel-body {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  gap: 12px;
+  padding: 8px 14px;
+  align-items: flex-start;
+}
+
+.import-day-group {
+  flex-shrink: 0;
+}
+
+.import-day-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.import-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.import-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid #2563eb;
+  font-size: 12px;
+  cursor: grab;
+  white-space: nowrap;
+  min-width: 130px;
+  user-select: none;
+  transition: box-shadow 0.15s;
+}
+
+.import-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-color: #c7ccd4;
+}
+
+.import-card:active {
+  cursor: grabbing;
+}
+
+.import-card-time {
+  color: var(--muted);
+  font-size: 11px;
+  min-width: 38px;
+  flex-shrink: 0;
+}
+
+.import-card-title {
+  flex: 1;
+  font-weight: 500;
+}
+
+.import-card-team {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 /* Drawers go full-width on very small screens */

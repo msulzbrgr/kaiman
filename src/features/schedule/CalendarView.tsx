@@ -29,12 +29,22 @@ export default function CalendarView({
   slotMinTime,
   slotMaxTime,
   onVisibleRangeChange,
+  editable,
+  droppable,
+  onEventDrop,
+  onEventResize,
+  onExternalDrop,
 }: {
   events: FcEvent[]
   onSelect: (id: number) => void
   slotMinTime: string
   slotMaxTime: string
   onVisibleRangeChange: (range: { start: Date; end: Date }) => void
+  editable?: boolean
+  droppable?: boolean
+  onEventDrop?: (eventId: number, start: Date, end: Date | null) => void
+  onEventResize?: (eventId: number, start: Date, end: Date | null) => void
+  onExternalDrop?: (draggedEl: HTMLElement, date: Date) => void
 }) {
   const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
 
@@ -89,6 +99,21 @@ export default function CalendarView({
         }}
         slotMinTime={slotMinTime}
         slotMaxTime={slotMaxTime}
+        editable={editable ?? false}
+        droppable={droppable ?? false}
+        eventDrop={
+          onEventDrop
+            ? (arg) => onEventDrop(Number(arg.event.id), arg.event.start!, arg.event.end)
+            : undefined
+        }
+        eventResize={
+          onEventResize
+            ? (arg) => onEventResize(Number(arg.event.id), arg.event.start!, arg.event.end)
+            : undefined
+        }
+        drop={
+          onExternalDrop ? (arg) => onExternalDrop(arg.draggedEl, arg.date) : undefined
+        }
         datesSet={(arg) => {
           onVisibleRangeChange({ start: arg.start, end: arg.end })
         }}
