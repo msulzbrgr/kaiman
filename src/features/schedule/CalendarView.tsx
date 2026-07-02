@@ -28,11 +28,13 @@ export default function CalendarView({
   onSelect,
   slotMinTime,
   slotMaxTime,
+  onVisibleRangeChange,
 }: {
   events: FcEvent[]
   onSelect: (id: number) => void
   slotMinTime: string
   slotMaxTime: string
+  onVisibleRangeChange: (range: { start: Date; end: Date }) => void
 }) {
   const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
 
@@ -87,6 +89,9 @@ export default function CalendarView({
         }}
         slotMinTime={slotMinTime}
         slotMaxTime={slotMaxTime}
+        datesSet={(arg) => {
+          onVisibleRangeChange({ start: arg.start, end: arg.end })
+        }}
         events={events.map((e) => ({
           id: e.id,
           title: e.title,
