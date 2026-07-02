@@ -14,6 +14,9 @@ interface Staged {
   error?: string
 }
 
+const ACCEPTED_FILE_TYPES =
+  '.xls,.xlsx,.html,.htm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/html'
+
 async function readFile(file: File): Promise<{ text: string; buffer: ArrayBuffer }> {
   const buf = await file.arrayBuffer()
   // Decode as UTF-8 and strip BOM.
@@ -100,7 +103,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
             <input
               type="file"
               multiple
-              accept=".xls,.xlsx,.html,.htm"
+              accept={ACCEPTED_FILE_TYPES}
               style={{ display: 'none' }}
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
             />
