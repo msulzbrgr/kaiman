@@ -12,6 +12,15 @@ function shortTeamLabel(name: string): string {
   return /U9|U12/i.test(stripped) ? stripped : 'U14'
 }
 
+const SLOT_BUFFER_MINUTES = 60
+
+function toSlotTime(totalMinutes: number): string {
+  const clamped = Math.min(Math.max(totalMinutes, 0), 24 * 60)
+  const hours = Math.floor(clamped / 60)
+  const minutes = clamped % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+}
+
 export default function SchedulePage() {
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
   const people = useLiveQuery(() => db.people.orderBy('displayName').toArray(), [], [])
@@ -75,6 +84,36 @@ export default function SchedulePage() {
         }
       })
   }, [events, peopleByEvent, teamById, selectedTeams, selectedPeople, showTraining, showGame, combineAnd])
+
+  const slotRange = useMemo(() => {
+    if (fcEvents.length === 0) return { min: '06:00:00', max: '23:00:00' }
+
+    let firstStart = Number.POSITIVE_INFINITY
+    let lastEnd = Number.NEGATIVE_INFINITY
+    let hasOvernightEvent = false
+
+    for (const event of fcEvents) {
+      const start = new Date(event.start)
+      const end = new Date(event.end ?? event.start)
+      if (start.toDateString() !== end.toDateString()) {
+        hasOvernightEvent = true
+        break
+      }
+
+      const startMinutes = start.getHours() * 60 + start.getMinutes()
+      const endMinutes = end.getHours() * 60 + end.getMinutes()
+
+      firstStart = Math.min(firstStart, startMinutes)
+      lastEnd = Math.max(lastEnd, endMinutes)
+    }
+
+    if (hasOvernightEvent) return { min: '00:00:00', max: '24:00:00' }
+
+    return {
+      min: toSlotTime(firstStart - SLOT_BUFFER_MINUTES),
+      max: toSlotTime(lastEnd + SLOT_BUFFER_MINUTES),
+    }
+  }, [fcEvents])
 
   const toggle = (set: Set<number>, id: number) => {
     const next = new Set(set)
@@ -145,7 +184,12 @@ export default function SchedulePage() {
           <span className="spacer" />
           <button className="btn sm primary" onClick={createEvent}>+ Event</button>
         </div>
-        <CalendarView events={fcEvents} onSelect={setOpenId} />
+        <CalendarView
+          events={fcEvents}
+          onSelect={setOpenId}
+          slotMinTime={slotRange.min}
+          slotMaxTime={slotRange.max}
+        />
       </div>
       {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}
     </div>

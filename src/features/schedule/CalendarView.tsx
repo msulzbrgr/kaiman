@@ -26,9 +26,13 @@ function getBreakpoint(w: number): Breakpoint {
 export default function CalendarView({
   events,
   onSelect,
+  slotMinTime,
+  slotMaxTime,
 }: {
   events: FcEvent[]
   onSelect: (id: number) => void
+  slotMinTime: string
+  slotMaxTime: string
 }) {
   const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
 
@@ -81,8 +85,8 @@ export default function CalendarView({
           },
           listMonth: { buttonText: 'Agenda' },
         }}
-        slotMinTime="06:00:00"
-        slotMaxTime="23:00:00"
+        slotMinTime={slotMinTime}
+        slotMaxTime={slotMaxTime}
         events={events.map((e) => ({
           id: e.id,
           title: e.title,
