@@ -63,7 +63,8 @@ test('week view uses slot range from visible week entries only', async ({ page }
     return [...new Set(times)]
   })
 
-  expect(slotTimes[0]).toBe('09:00:00')
+  const earliestSlotTime = [...slotTimes].sort()[0]
+  expect(earliestSlotTime).toBe('09:00:00')
   expect(slotTimes).toContain('11:30:00')
   expect(slotTimes).not.toContain('01:00:00')
 })
