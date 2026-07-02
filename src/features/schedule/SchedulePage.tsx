@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/db'
 import FilterRail from './FilterRail'
@@ -51,6 +51,27 @@ export default function SchedulePage() {
   const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
   const selectedImportedEvent =
     selectedImportedEventId == null ? null : eventById.get(selectedImportedEventId) ?? null
+  const canResetSelectedImportedEvent =
+    !!selectedImportedEvent &&
+    selectedImportedEvent.sourceId !== null &&
+    selectedImportedEvent.originalStart != null &&
+    (selectedImportedEvent.start !== selectedImportedEvent.originalStart ||
+      selectedImportedEvent.end !== selectedImportedEvent.originalEnd)
+
+  useEffect(() => {
+    const missingBaseline = events.filter(
+      (event) => event.sourceId !== null && event.originalStart == null && event.start,
+    )
+    if (missingBaseline.length === 0) return
+    void db.transaction('rw', db.events, async () => {
+      for (const event of missingBaseline) {
+        await db.events.update(event.id!, {
+          originalStart: event.start,
+          originalEnd: event.end,
+        })
+      }
+    })
+  }, [events])
 
   // eventId -> set of personIds assigned
   const peopleByEvent = useMemo(() => {
@@ -320,13 +341,7 @@ export default function SchedulePage() {
             onResetSelected={resetSelectedImportedCard}
             canUndo={undoStack.length > 0}
             canRedo={redoStack.length > 0}
-            canResetSelected={
-              !!selectedImportedEvent &&
-              selectedImportedEvent.sourceId !== null &&
-              !!selectedImportedEvent.originalStart &&
-              (selectedImportedEvent.start !== selectedImportedEvent.originalStart ||
-                selectedImportedEvent.end !== selectedImportedEvent.originalEnd)
-            }
+            canResetSelected={canResetSelectedImportedEvent}
           />
         </div>
       </div>
