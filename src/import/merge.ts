@@ -73,7 +73,7 @@ export async function previewImport(
   }
 }
 
-const SCHEDULE_FIELDS: (keyof ScheduleEvent)[] = [
+const SCHEDULE_FIELDS = [
   'type',
   'art',
   'opponent',
@@ -84,7 +84,7 @@ const SCHEDULE_FIELDS: (keyof ScheduleEvent)[] = [
   'start',
   'end',
   'remarks',
-]
+] as const satisfies readonly (keyof ScheduleEvent)[]
 
 export async function commitImport(
   result: ImportResult,
@@ -147,22 +147,30 @@ async function upsertEvent(
     .equals([sourceId, ev.sourceKey])
     .first()
 
-  const fields: Partial<ScheduleEvent> = {}
+  const fields = {} as Pick<ScheduleEvent, (typeof SCHEDULE_FIELDS)[number]>
   for (const f of SCHEDULE_FIELDS) {
     ;(fields as any)[f] = (ev as any)[f]
   }
 
   if (existing?.id) {
     // Update schedule fields, re-activate, keep team + manual assignments.
-    await db.events.update(existing.id, { ...fields, teamId, status: 'active' })
+    await db.events.update(existing.id, {
+      ...fields,
+      teamId,
+      status: 'active',
+      originalStart: ev.start,
+      originalEnd: ev.end,
+    })
     return existing.id
   }
   return db.events.add({
     sourceId,
     sourceKey: ev.sourceKey,
+    originalStart: ev.start,
+    originalEnd: ev.end,
     teamId,
     status: 'active',
     manual: false,
-    ...(fields as Omit<ScheduleEvent, 'id' | 'sourceId' | 'sourceKey' | 'teamId' | 'status' | 'manual'>),
+    ...fields,
   } as ScheduleEvent)
 }
