@@ -175,6 +175,10 @@ export default function SchedulePage() {
 
   async function handleEventUpdate(eventId: number, start: Date, end: Date | null) {
     await updateEventTimeWithHistory(eventId, start.toISOString(), end ? end.toISOString() : null)
+    const event = eventById.get(eventId)
+    if (event?.sourceId != null) {
+      setSelectedImportedEventId(eventId)
+    }
   }
 
   async function handleExternalDrop(draggedEl: HTMLElement, newStart: Date) {
@@ -191,6 +195,9 @@ export default function SchedulePage() {
       newStart.toISOString(),
       newEnd ? newEnd.toISOString() : event.end,
     )
+    if (event.sourceId != null) {
+      setSelectedImportedEventId(eventId)
+    }
   }
 
   async function updateEventTimeWithHistory(
