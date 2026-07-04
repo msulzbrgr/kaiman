@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/db'
-import FilterRail from './FilterRail'
+import FilterRail, { type TeamFilterOption } from './FilterRail'
 import CalendarView, { type FcEvent } from './CalendarView'
 import EventDrawer from './EventDrawer'
 import ImportedEventsPanel from './ImportedEventsPanel'
@@ -14,6 +14,9 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
+const MAX_TEAM_FILTER_REMARK_TEXT_LENGTH = 5
+const MAX_REMARK_PREVIEW_LENGTH = 5
+const MAX_REMARK_TITLE_LENGTH = 49
 interface EventTimeChange {
   eventId: number
   beforeStart: string | null
@@ -36,13 +39,71 @@ function toSlotTime(totalMinutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
 }
 
+type TeamFilterEvent = {
+  teamId: number
+  remarks: string
+}
+
+type TeamFilterVariant = {
+  id: string
+  getValue: (event: TeamFilterEvent) => string | null
+  isEnabled: (value: string) => boolean
+  getLabel: (teamName: string, value: string) => string
+}
+
+function getNonEmptyRemarks(remarks: string): string | null {
+  const trimmed = remarks.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+const TEAM_FILTER_VARIANTS: TeamFilterVariant[] = [
+  {
+    id: 'remarks',
+    getValue: (event) => getNonEmptyRemarks(event.remarks),
+    isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARK_TEXT_LENGTH,
+    getLabel: (teamName, value) => `${teamName} · ${value}`,
+  },
+]
+
+function buildTeamFilterKey(teamId: number, variantId?: string, value?: string): string {
+  return JSON.stringify([teamId, variantId ?? null, value ?? null])
+}
+
+function parseTeamFilterKey(filterKey: string): { teamId: number; variantId: string | null; value: string | null } | null {
+  try {
+    const value = JSON.parse(filterKey)
+    if (!Array.isArray(value) || value.length !== 3) return null
+    const [teamId, variantId, variantValue] = value
+    if (!Number.isFinite(teamId)) return null
+    if (variantId !== null && typeof variantId !== 'string') return null
+    if (variantValue !== null && typeof variantValue !== 'string') return null
+    return { teamId, variantId, value: variantValue }
+  } catch {
+    return null
+  }
+}
+
+function getTeamIdFromFilterKey(filterKey: string): number | null {
+  return parseTeamFilterKey(filterKey)?.teamId ?? null
+}
+
+function matchesTeamFilter(filterKey: string, event: TeamFilterEvent): boolean {
+  const parsed = parseTeamFilterKey(filterKey)
+  if (!parsed || parsed.teamId !== event.teamId) return false
+  if (parsed.variantId === null || parsed.value === null) return true
+  const variant = TEAM_FILTER_VARIANTS.find((candidate) => candidate.id === parsed.variantId)
+  if (!variant || !variant.isEnabled(parsed.value)) return false
+  const eventValue = variant.getValue(event)
+  return eventValue !== null && variant.isEnabled(eventValue) && eventValue === parsed.value
+}
+
 export default function SchedulePage() {
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
   const people = useLiveQuery(() => db.people.orderBy('displayName').toArray(), [], [])
   const events = useLiveQuery(() => db.events.toArray(), [], [])
   const assignments = useLiveQuery(() => db.assignments.toArray(), [], [])
 
-  const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set())
+  const [selectedTeamFilters, setSelectedTeamFilters] = useState<Set<string>>(new Set())
   const [selectedPeople, setSelectedPeople] = useState<Set<number>>(new Set())
   const [showTraining, setShowTraining] = useState(true)
   const [showGame, setShowGame] = useState(true)
@@ -90,15 +151,63 @@ export default function SchedulePage() {
     return m
   }, [assignments])
 
+  const teamFilters = useMemo<TeamFilterOption[]>(() => {
+    const variantOptionsByTeamId = new Map<number, Map<string, Set<string>>>()
+    for (const event of events) {
+      for (const variant of TEAM_FILTER_VARIANTS) {
+        const value = variant.getValue(event)
+        if (!value || !variant.isEnabled(value)) continue
+        const optionsByVariant =
+          variantOptionsByTeamId.get(event.teamId) ??
+          (() => {
+            const next = new Map<string, Set<string>>()
+            variantOptionsByTeamId.set(event.teamId, next)
+            return next
+          })()
+        const variantValues =
+          optionsByVariant.get(variant.id) ??
+          (() => {
+            const next = new Set<string>()
+            optionsByVariant.set(variant.id, next)
+            return next
+          })()
+        variantValues.add(value)
+      }
+    }
+
+    return teams.flatMap((team) => {
+      const options: TeamFilterOption[] = [
+        {
+          key: buildTeamFilterKey(team.id!),
+          label: team.name,
+          color: team.color,
+        },
+      ]
+      const optionsByVariant = variantOptionsByTeamId.get(team.id!) ?? new Map()
+      for (const variant of TEAM_FILTER_VARIANTS) {
+        const values = [...(optionsByVariant.get(variant.id) ?? [])].sort((a, b) => a.localeCompare(b))
+        for (const value of values) {
+          options.push({
+            key: buildTeamFilterKey(team.id!, variant.id, value),
+            label: variant.getLabel(team.name, value),
+            color: team.color,
+          })
+        }
+      }
+      return options
+    })
+  }, [events, teams])
+
   const fcEvents: FcEvent[] = useMemo(() => {
     return events
       .filter((e) => e.start)
       .filter((e) => (e.type === 'training' ? showTraining : showGame))
       .filter((e) => {
-        const teamActive = selectedTeams.size > 0
+        const teamActive = selectedTeamFilters.size > 0
         const personActive = selectedPeople.size > 0
         if (!teamActive && !personActive) return true
-        const teamHit = teamActive && selectedTeams.has(e.teamId)
+        const teamHit =
+          teamActive && [...selectedTeamFilters].some((filterKey) => matchesTeamFilter(filterKey, e))
         const personHit =
           personActive &&
           [...(peopleByEvent.get(e.id!) ?? [])].some((pid) => selectedPeople.has(pid))
@@ -113,8 +222,11 @@ export default function SchedulePage() {
             ? e.art ? ` · ${e.art}` : ''
             : e.opponent ? ` vs ${e.opponent}` : ''
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
-        const remarks = e.remarks?.trim() ?? ''
-        const desc = remarks && remarks.length < 50 ? ` · ${remarks.slice(0, 5)}` : ''
+        const trimmedRemarks = e.remarks?.trim() ?? ''
+        const desc =
+          trimmedRemarks && trimmedRemarks.length <= MAX_REMARK_TITLE_LENGTH
+            ? ` · ${trimmedRemarks.slice(0, MAX_REMARK_PREVIEW_LENGTH)}`
+            : ''
         const prefix = e.type === 'training' ? '' : `${typeLabel} · `
         const title = `${prefix}${teamLabel}${detail}${desc}`
         return {
@@ -126,7 +238,7 @@ export default function SchedulePage() {
           cancelled: e.status === 'cancelled',
         }
       })
-  }, [events, peopleByEvent, teamById, selectedTeams, selectedPeople, showTraining, showGame, combineAnd])
+  }, [events, peopleByEvent, teamById, selectedTeamFilters, selectedPeople, showTraining, showGame, combineAnd])
 
   const slotRange = useMemo(() => {
     const eventsInRange =
@@ -167,9 +279,9 @@ export default function SchedulePage() {
     }
   }, [fcEvents, visibleRange])
 
-  const toggle = (set: Set<number>, id: number) => {
+  const toggle = <T,>(set: Set<T>, value: T) => {
     const next = new Set(set)
-    next.has(id) ? next.delete(id) : next.add(id)
+    next.has(value) ? next.delete(value) : next.add(value)
     return next
   }
 
@@ -265,7 +377,7 @@ export default function SchedulePage() {
   }
 
   async function createEvent() {
-    const teamId = [...selectedTeams][0] ?? teams[0]?.id
+    const teamId = getTeamIdFromFilterKey([...selectedTeamFilters][0] ?? '') ?? teams[0]?.id
     if (!teamId) {
       alert('Bitte zuerst ein Team anlegen oder importieren.')
       return
@@ -299,19 +411,20 @@ export default function SchedulePage() {
     <div className="schedule">
       <FilterRail
         teams={teams}
+        teamFilters={teamFilters}
         people={people}
-        selectedTeams={selectedTeams}
+        selectedTeamFilters={selectedTeamFilters}
         selectedPeople={selectedPeople}
         showTraining={showTraining}
         showGame={showGame}
         combineAnd={combineAnd}
         mobileOpen={filterOpen}
-        onToggleTeam={(id) => setSelectedTeams((s) => toggle(s, id))}
+        onToggleTeamFilter={(key) => setSelectedTeamFilters((s) => toggle(s, key))}
         onTogglePerson={(id) => setSelectedPeople((s) => toggle(s, id))}
         onSetType={(k, v) => (k === 'training' ? setShowTraining(v) : setShowGame(v))}
         onSetCombine={setCombineAnd}
         onClear={() => {
-          setSelectedTeams(new Set())
+          setSelectedTeamFilters(new Set())
           setSelectedPeople(new Set())
         }}
         onCreateEvent={createEvent}
@@ -323,8 +436,8 @@ export default function SchedulePage() {
       <div className="schedule-main">
         <div className="schedule-mobile-bar">
           <button className="btn sm" onClick={() => setFilterOpen(true)}>☰ Filter</button>
-          {(selectedTeams.size > 0 || selectedPeople.size > 0) && (
-            <span className="badge">{selectedTeams.size + selectedPeople.size} aktiv</span>
+        {(selectedTeamFilters.size > 0 || selectedPeople.size > 0) && (
+          <span className="badge">{selectedTeamFilters.size + selectedPeople.size} aktiv</span>
           )}
           <span className="spacer" />
           <button className="btn sm primary" onClick={createEvent}>+ Event</button>

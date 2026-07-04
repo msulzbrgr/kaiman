@@ -39,12 +39,13 @@ zusätzlich kann der Workflow manuell über den Actions-Tab gestartet werden.
 - **Quellen / Import** (`Quellen`-Tab): `.xls`-Dateien per Drag & Drop importieren. Vor dem
   Import zeigt eine Vorschau, wie viele Events neu / aktualisiert / entfallen sind und wie
   viele neue Personen/Teams entstehen. Beim erneuten Import einer **gleichnamigen** Datei
-  werden Events anhand von `Datum + Team + Start (+ Ort/Bemerkung)` zusammengeführt (Merge);
+  werden Events anhand von `Datum + Team + Start (+ Ort/Bemerkungen)` zusammengeführt (Merge);
   manuell hinzugefügte Personen, Rollen und Spieler bleiben erhalten. Events, die in der
   neuen Datei fehlen, werden als „entfällt" markiert (nicht gelöscht).
 - **Spielplan** (`Spielplan`-Tab): Kalender mit Ansichten Tag / Arbeitswoche / Woche /
   2 Wochen / Monat / Agenda. Filter nach **Teams** und/oder **Personen** (ODER- bzw.
-  UND-Verknüpfung). Klick auf ein Event öffnet die Detail-/Bearbeitungsansicht.
+  UND-Verknüpfung); zusätzliche Team-Filter können gezielt aus kurzen **Bemerkungen**
+  abgeleitet werden. Klick auf ein Event öffnet die Detail-/Bearbeitungsansicht.
 - **Inline-Bearbeitung** je Event: Typ, Team, Zeiten, Ort, Gegner, Bemerkungen direkt
   editierbar. **Beteiligte** sind nach Rolle gruppiert (Coach / Assistant Coach /
   Off-Ice Coach / Spieler / Helfer); Personen lassen sich per Typeahead aus dem Team-Kader

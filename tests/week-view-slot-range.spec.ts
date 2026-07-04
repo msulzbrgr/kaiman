@@ -22,13 +22,20 @@ async function createTeam(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Spielplan' }).click()
 }
 
-async function createEvent(page: Page, start: Date, end: Date): Promise<void> {
+async function createEvent(page: Page, start: Date, end: Date, remarks?: string): Promise<void> {
   await page.getByRole('button', { name: '+ Neues Event' }).click()
   await expect(page.locator('.drawer')).toBeVisible()
 
   const dateTimeInputs = page.locator('.drawer input[type="datetime-local"]')
   await dateTimeInputs.nth(0).fill(toLocalInput(start))
   await dateTimeInputs.nth(1).fill(toLocalInput(end))
+
+  if (remarks !== undefined) {
+    const remarksField = page.locator('.field', { hasText: 'Bemerkungen' })
+    await remarksField.locator('.editable').click()
+    await remarksField.locator('textarea').fill(remarks)
+    await dateTimeInputs.nth(0).click()
+  }
 
   await page.locator('.drawer button', { hasText: '✕' }).click()
   await expect(page.locator('.drawer')).toHaveCount(0)
@@ -67,4 +74,42 @@ test('week view uses slot range from visible week entries only', async ({ page }
   expect(earliestSlotTime).toBe('09:00:00')
   expect(slotTimes).toContain('11:30:00')
   expect(slotTimes).not.toContain('01:00:00')
+})
+
+test('team filters include short remarks only and filter matching events', async ({ page }) => {
+  const monday = mondayOfCurrentWeek()
+
+  const shortStart = new Date(monday)
+  shortStart.setDate(monday.getDate() + 1)
+  shortStart.setHours(10, 0, 0, 0)
+  const shortEnd = new Date(shortStart)
+  shortEnd.setHours(11, 0, 0, 0)
+
+  const longStart = new Date(monday)
+  longStart.setDate(monday.getDate() + 1)
+  longStart.setHours(12, 0, 0, 0)
+  const longEnd = new Date(longStart)
+  longEnd.setHours(13, 0, 0, 0)
+
+  const plainStart = new Date(monday)
+  plainStart.setDate(monday.getDate() + 1)
+  plainStart.setHours(14, 0, 0, 0)
+  const plainEnd = new Date(plainStart)
+  plainEnd.setHours(15, 0, 0, 0)
+
+  await page.goto('/')
+  await createTeam(page, 'EHC Zuchwil Regio U12')
+  await createEvent(page, shortStart, shortEnd, 'ICE')
+  await createEvent(page, longStart, longEnd, 'Länger')
+  await createEvent(page, plainStart, plainEnd)
+
+  await page.locator('button.fc-timeGridWeek-button').click()
+  await expect(page.locator('.fc-timegrid-event')).toHaveCount(3)
+
+  const filterRail = page.locator('.filter-rail')
+  await expect(filterRail.getByText('EHC Zuchwil Regio U12 · ICE')).toBeVisible()
+  await expect(filterRail.getByText('EHC Zuchwil Regio U12 · Länger')).toHaveCount(0)
+
+  await page.getByLabel('EHC Zuchwil Regio U12 · ICE').check()
+  await expect(page.locator('.fc-timegrid-event')).toHaveCount(1)
 })
