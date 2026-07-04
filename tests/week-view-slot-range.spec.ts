@@ -31,8 +31,9 @@ async function createEvent(page: Page, start: Date, end: Date, remarks?: string)
   await dateTimeInputs.nth(1).fill(toLocalInput(end))
 
   if (remarks !== undefined) {
-    await page.locator('.field', { hasText: 'Bemerkungen' }).locator('.editable').click()
-    await page.locator('.drawer textarea').fill(remarks)
+    const remarksField = page.locator('.field', { hasText: 'Bemerkungen' })
+    await remarksField.locator('.editable').click()
+    await remarksField.locator('textarea').fill(remarks)
     await dateTimeInputs.nth(0).click()
   }
 

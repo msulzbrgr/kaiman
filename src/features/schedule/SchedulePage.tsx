@@ -14,6 +14,9 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
+const MAX_TEAM_FILTER_REMARK_LENGTH = 5
+const MAX_REMARK_PREVIEW_LENGTH = 5
+const MAX_REMARK_TITLE_LENGTH = 49
 interface EventTimeChange {
   eventId: number
   beforeStart: string | null
@@ -38,7 +41,7 @@ function toSlotTime(totalMinutes: number): string {
 
 function getShortRemark(remarks: string): string | null {
   const trimmed = remarks.trim()
-  return trimmed.length > 0 && trimmed.length < 6 ? trimmed : null
+  return trimmed.length > 0 && trimmed.length <= MAX_TEAM_FILTER_REMARK_LENGTH ? trimmed : null
 }
 
 function buildTeamFilterKey(teamId: number, remark?: string): string {
@@ -179,7 +182,9 @@ export default function SchedulePage() {
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
         const trimmedRemarks = e.remarks?.trim() ?? ''
         const desc =
-          trimmedRemarks && trimmedRemarks.length < 50 ? ` · ${trimmedRemarks.slice(0, 5)}` : ''
+          trimmedRemarks && trimmedRemarks.length <= MAX_REMARK_TITLE_LENGTH
+            ? ` · ${trimmedRemarks.slice(0, MAX_REMARK_PREVIEW_LENGTH)}`
+            : ''
         const prefix = e.type === 'training' ? '' : `${typeLabel} · `
         const title = `${prefix}${teamLabel}${detail}${desc}`
         return {
