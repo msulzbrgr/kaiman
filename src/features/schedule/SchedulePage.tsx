@@ -48,6 +48,7 @@ function buildTeamFilterKey(teamId: number, remark?: string): string {
 
 function getTeamIdFromFilterKey(filterKey: string): number | null {
   const [teamId] = filterKey.split(TEAM_FILTER_SEPARATOR, 1)
+  if (!teamId) return null
   const parsed = Number(teamId)
   return Number.isFinite(parsed) ? parsed : null
 }
