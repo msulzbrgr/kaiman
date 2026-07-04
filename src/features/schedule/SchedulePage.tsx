@@ -14,7 +14,7 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
-const MAX_TEAM_FILTER_REMARK_LENGTH = 5
+const MAX_TEAM_FILTER_REMARKS_LENGTH = 5
 const MAX_REMARK_PREVIEW_LENGTH = 5
 const MAX_REMARK_TITLE_LENGTH = 49
 interface EventTimeChange {
@@ -39,23 +39,45 @@ function toSlotTime(totalMinutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
 }
 
-function getShortRemark(remarks: string): string | null {
+type TeamFilterEvent = {
+  teamId: number
+  remarks: string
+}
+
+type TeamFilterVariant = {
+  id: string
+  getValue: (event: TeamFilterEvent) => string | null
+  isEnabled: (value: string) => boolean
+  getLabel: (teamName: string, value: string) => string
+}
+
+function getNormalizedRemarks(remarks: string): string | null {
   const trimmed = remarks.trim()
-  return trimmed.length > 0 && trimmed.length <= MAX_TEAM_FILTER_REMARK_LENGTH ? trimmed : null
+  return trimmed.length > 0 ? trimmed : null
 }
 
-function buildTeamFilterKey(teamId: number, remark?: string): string {
-  return JSON.stringify([teamId, remark ?? null])
+const TEAM_FILTER_VARIANTS: TeamFilterVariant[] = [
+  {
+    id: 'remarks',
+    getValue: (event) => getNormalizedRemarks(event.remarks),
+    isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARKS_LENGTH,
+    getLabel: (teamName, value) => `${teamName} · ${value}`,
+  },
+]
+
+function buildTeamFilterKey(teamId: number, variantId?: string, value?: string): string {
+  return JSON.stringify([teamId, variantId ?? null, value ?? null])
 }
 
-function parseTeamFilterKey(filterKey: string): { teamId: number; remark: string | null } | null {
+function parseTeamFilterKey(filterKey: string): { teamId: number; variantId: string | null; value: string | null } | null {
   try {
     const value = JSON.parse(filterKey)
-    if (!Array.isArray(value) || value.length !== 2) return null
-    const [teamId, remark] = value
+    if (!Array.isArray(value) || value.length !== 3) return null
+    const [teamId, variantId, variantValue] = value
     if (!Number.isFinite(teamId)) return null
-    if (remark !== null && typeof remark !== 'string') return null
-    return { teamId, remark }
+    if (variantId !== null && typeof variantId !== 'string') return null
+    if (variantValue !== null && typeof variantValue !== 'string') return null
+    return { teamId, variantId, value: variantValue }
   } catch {
     return null
   }
@@ -65,10 +87,14 @@ function getTeamIdFromFilterKey(filterKey: string): number | null {
   return parseTeamFilterKey(filterKey)?.teamId ?? null
 }
 
-function matchesTeamFilter(filterKey: string, event: { teamId: number; remarks: string }): boolean {
+function matchesTeamFilter(filterKey: string, event: TeamFilterEvent): boolean {
   const parsed = parseTeamFilterKey(filterKey)
   if (!parsed || parsed.teamId !== event.teamId) return false
-  return parsed.remark === null ? true : getShortRemark(event.remarks) === parsed.remark
+  if (parsed.variantId === null || parsed.value === null) return true
+  const variant = TEAM_FILTER_VARIANTS.find((candidate) => candidate.id === parsed.variantId)
+  if (!variant || !variant.isEnabled(parsed.value)) return false
+  const eventValue = variant.getValue(event)
+  return eventValue !== null && variant.isEnabled(eventValue) && eventValue === parsed.value
 }
 
 export default function SchedulePage() {
@@ -126,14 +152,20 @@ export default function SchedulePage() {
   }, [assignments])
 
   const teamFilters = useMemo<TeamFilterOption[]>(() => {
-    const remarkOptionsByTeamId = new Map<number, Set<string>>()
+    const variantOptionsByTeamId = new Map<number, Map<string, Set<string>>>()
     for (const event of events) {
-      const remark = getShortRemark(event.remarks)
-      if (!remark) continue
-      if (!remarkOptionsByTeamId.has(event.teamId)) {
-        remarkOptionsByTeamId.set(event.teamId, new Set())
+      for (const variant of TEAM_FILTER_VARIANTS) {
+        const value = variant.getValue(event)
+        if (!value || !variant.isEnabled(value)) continue
+        if (!variantOptionsByTeamId.has(event.teamId)) {
+          variantOptionsByTeamId.set(event.teamId, new Map())
+        }
+        const optionsByVariant = variantOptionsByTeamId.get(event.teamId)!
+        if (!optionsByVariant.has(variant.id)) {
+          optionsByVariant.set(variant.id, new Set())
+        }
+        optionsByVariant.get(variant.id)!.add(value)
       }
-      remarkOptionsByTeamId.get(event.teamId)!.add(remark)
     }
 
     return teams.flatMap((team) => {
@@ -144,13 +176,16 @@ export default function SchedulePage() {
           color: team.color,
         },
       ]
-      const remarks = [...(remarkOptionsByTeamId.get(team.id!) ?? [])].sort((a, b) => a.localeCompare(b))
-      for (const remark of remarks) {
-        options.push({
-          key: buildTeamFilterKey(team.id!, remark),
-          label: `${team.name} · ${remark}`,
-          color: team.color,
-        })
+      const optionsByVariant = variantOptionsByTeamId.get(team.id!) ?? new Map()
+      for (const variant of TEAM_FILTER_VARIANTS) {
+        const values = [...(optionsByVariant.get(variant.id) ?? [])].sort((a, b) => a.localeCompare(b))
+        for (const value of values) {
+          options.push({
+            key: buildTeamFilterKey(team.id!, variant.id, value),
+            label: variant.getLabel(team.name, value),
+            color: team.color,
+          })
+        }
       }
       return options
     })
