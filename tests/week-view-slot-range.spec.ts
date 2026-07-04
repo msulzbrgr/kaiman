@@ -99,7 +99,7 @@ test('team filters include short remarks only and filter matching events', async
   await page.goto('/')
   await createTeam(page, 'EHC Zuchwil Regio U12')
   await createEvent(page, shortStart, shortEnd, 'ICE')
-  await createEvent(page, longStart, longEnd, 'Laenger')
+  await createEvent(page, longStart, longEnd, 'Länger')
   await createEvent(page, plainStart, plainEnd)
 
   await page.locator('button.fc-timeGridWeek-button').click()
@@ -107,7 +107,7 @@ test('team filters include short remarks only and filter matching events', async
 
   const filterRail = page.locator('.filter-rail')
   await expect(filterRail.getByText('EHC Zuchwil Regio U12 · ICE')).toBeVisible()
-  await expect(filterRail.getByText('EHC Zuchwil Regio U12 · Laenger')).toHaveCount(0)
+  await expect(filterRail.getByText('EHC Zuchwil Regio U12 · Länger')).toHaveCount(0)
 
   await page.getByLabel('EHC Zuchwil Regio U12 · ICE').check()
   await expect(page.locator('.fc-timegrid-event')).toHaveCount(1)

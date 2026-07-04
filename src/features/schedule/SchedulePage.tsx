@@ -37,7 +37,7 @@ function toSlotTime(totalMinutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
 }
 
-function getFilterableRemark(remarks: string): string | null {
+function getShortRemark(remarks: string): string | null {
   const trimmed = remarks.trim()
   return trimmed.length > 0 && trimmed.length < 6 ? trimmed : null
 }
@@ -56,7 +56,7 @@ function getTeamIdFromFilterKey(filterKey: string): number | null {
 function matchesTeamFilter(filterKey: string, event: { teamId: number; remarks: string }): boolean {
   const [teamIdPart, remark] = filterKey.split(TEAM_FILTER_SEPARATOR)
   if (Number(teamIdPart) !== event.teamId) return false
-  return remark == null ? true : getFilterableRemark(event.remarks) === remark
+  return remark == null ? true : getShortRemark(event.remarks) === remark
 }
 
 export default function SchedulePage() {
@@ -116,7 +116,7 @@ export default function SchedulePage() {
   const teamFilters = useMemo<TeamFilterOption[]>(() => {
     const remarkOptionsByTeamId = new Map<number, Set<string>>()
     for (const event of events) {
-      const remark = getFilterableRemark(event.remarks)
+      const remark = getShortRemark(event.remarks)
       if (!remark) continue
       if (!remarkOptionsByTeamId.has(event.teamId)) {
         remarkOptionsByTeamId.set(event.teamId, new Set())
@@ -168,7 +168,7 @@ export default function SchedulePage() {
             ? e.art ? ` · ${e.art}` : ''
             : e.opponent ? ` vs ${e.opponent}` : ''
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
-        const remark = getFilterableRemark(e.remarks ?? '')
+        const remark = getShortRemark(e.remarks ?? '')
         const desc = remark ? ` · ${remark}` : ''
         const prefix = e.type === 'training' ? '' : `${typeLabel} · `
         const title = `${prefix}${teamLabel}${detail}${desc}`
