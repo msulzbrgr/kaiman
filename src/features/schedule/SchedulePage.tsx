@@ -177,8 +177,9 @@ export default function SchedulePage() {
             ? e.art ? ` · ${e.art}` : ''
             : e.opponent ? ` vs ${e.opponent}` : ''
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
-        const remark = getShortRemark(e.remarks ?? '')
-        const desc = remark ? ` · ${remark}` : ''
+        const trimmedRemarks = e.remarks?.trim() ?? ''
+        const desc =
+          trimmedRemarks && trimmedRemarks.length < 50 ? ` · ${trimmedRemarks.slice(0, 5)}` : ''
         const prefix = e.type === 'training' ? '' : `${typeLabel} · `
         const title = `${prefix}${teamLabel}${detail}${desc}`
         return {
