@@ -14,7 +14,7 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
-const MAX_TEAM_FILTER_REMARKS_LENGTH = 5
+const MAX_TEAM_FILTER_REMARK_TEXT_LENGTH = 5
 const MAX_REMARK_PREVIEW_LENGTH = 5
 const MAX_REMARK_TITLE_LENGTH = 49
 interface EventTimeChange {
@@ -51,7 +51,7 @@ type TeamFilterVariant = {
   getLabel: (teamName: string, value: string) => string
 }
 
-function getTrimmedRemarks(remarks: string): string | null {
+function getNonEmptyRemarks(remarks: string): string | null {
   const trimmed = remarks.trim()
   return trimmed.length > 0 ? trimmed : null
 }
@@ -59,8 +59,8 @@ function getTrimmedRemarks(remarks: string): string | null {
 const TEAM_FILTER_VARIANTS: TeamFilterVariant[] = [
   {
     id: 'remarks',
-    getValue: (event) => getTrimmedRemarks(event.remarks),
-    isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARKS_LENGTH,
+    getValue: (event) => getNonEmptyRemarks(event.remarks),
+    isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARK_TEXT_LENGTH,
     getLabel: (teamName, value) => `${teamName} · ${value}`,
   },
 ]
