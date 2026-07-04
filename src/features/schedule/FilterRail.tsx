@@ -1,16 +1,23 @@
 import { useState } from 'react'
 import type { Person, Team } from '../../db/types'
 
+export interface TeamFilterOption {
+  key: string
+  label: string
+  color: string
+}
+
 interface Props {
   teams: Team[]
+  teamFilters: TeamFilterOption[]
   people: Person[]
-  selectedTeams: Set<number>
+  selectedTeamFilters: Set<string>
   selectedPeople: Set<number>
   showTraining: boolean
   showGame: boolean
   combineAnd: boolean
   mobileOpen: boolean
-  onToggleTeam: (id: number) => void
+  onToggleTeamFilter: (key: string) => void
   onTogglePerson: (id: number) => void
   onSetType: (kind: 'training' | 'game', v: boolean) => void
   onSetCombine: (v: boolean) => void
@@ -24,7 +31,7 @@ export default function FilterRail(p: Props) {
   const filteredPeople = p.people.filter((pe) =>
     pe.displayName.toLowerCase().includes(q.toLowerCase()),
   )
-  const anyFilter = p.selectedTeams.size > 0 || p.selectedPeople.size > 0
+  const anyFilter = p.selectedTeamFilters.size > 0 || p.selectedPeople.size > 0
 
   return (
     <div className={`filter-rail${p.mobileOpen ? ' mobile-open' : ''}`}>
@@ -56,15 +63,15 @@ export default function FilterRail(p: Props) {
 
       <h3>Teams</h3>
       {p.teams.length === 0 && <p className="muted">Keine Teams</p>}
-      {p.teams.map((t) => (
-        <label className="check-row" key={t.id}>
+      {p.teamFilters.map((teamFilter) => (
+        <label className="check-row" key={teamFilter.key}>
           <input
             type="checkbox"
-            checked={p.selectedTeams.has(t.id!)}
-            onChange={() => p.onToggleTeam(t.id!)}
+            checked={p.selectedTeamFilters.has(teamFilter.key)}
+            onChange={() => p.onToggleTeamFilter(teamFilter.key)}
           />
-          <span className="swatch" style={{ background: t.color }} />
-          {t.name}
+          <span className="swatch" style={{ background: teamFilter.color }} />
+          {teamFilter.label}
         </label>
       ))}
 
@@ -86,7 +93,7 @@ export default function FilterRail(p: Props) {
         </label>
       ))}
 
-      {p.selectedTeams.size > 0 && p.selectedPeople.size > 0 && (
+      {p.selectedTeamFilters.size > 0 && p.selectedPeople.size > 0 && (
         <>
           <h3>Verknüpfung</h3>
           <label className="check-row">
