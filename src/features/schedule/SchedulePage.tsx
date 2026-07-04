@@ -51,7 +51,7 @@ type TeamFilterVariant = {
   getLabel: (teamName: string, value: string) => string
 }
 
-function getNormalizedRemarks(remarks: string): string | null {
+function getTrimmedRemarks(remarks: string): string | null {
   const trimmed = remarks.trim()
   return trimmed.length > 0 ? trimmed : null
 }
@@ -59,7 +59,7 @@ function getNormalizedRemarks(remarks: string): string | null {
 const TEAM_FILTER_VARIANTS: TeamFilterVariant[] = [
   {
     id: 'remarks',
-    getValue: (event) => getNormalizedRemarks(event.remarks),
+    getValue: (event) => getTrimmedRemarks(event.remarks),
     isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARKS_LENGTH,
     getLabel: (teamName, value) => `${teamName} · ${value}`,
   },
@@ -157,14 +157,21 @@ export default function SchedulePage() {
       for (const variant of TEAM_FILTER_VARIANTS) {
         const value = variant.getValue(event)
         if (!value || !variant.isEnabled(value)) continue
-        if (!variantOptionsByTeamId.has(event.teamId)) {
-          variantOptionsByTeamId.set(event.teamId, new Map())
-        }
-        const optionsByVariant = variantOptionsByTeamId.get(event.teamId)!
-        if (!optionsByVariant.has(variant.id)) {
-          optionsByVariant.set(variant.id, new Set())
-        }
-        optionsByVariant.get(variant.id)!.add(value)
+        const optionsByVariant =
+          variantOptionsByTeamId.get(event.teamId) ??
+          (() => {
+            const next = new Map<string, Set<string>>()
+            variantOptionsByTeamId.set(event.teamId, next)
+            return next
+          })()
+        const variantValues =
+          optionsByVariant.get(variant.id) ??
+          (() => {
+            const next = new Set<string>()
+            optionsByVariant.set(variant.id, next)
+            return next
+          })()
+        variantValues.add(value)
       }
     }
 
