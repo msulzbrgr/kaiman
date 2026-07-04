@@ -14,7 +14,6 @@ function shortTeamLabel(name: string): string {
 }
 
 const SLOT_BUFFER_MINUTES = 60
-const TEAM_FILTER_SEPARATOR = '::'
 interface EventTimeChange {
   eventId: number
   beforeStart: string | null
@@ -43,20 +42,30 @@ function getShortRemark(remarks: string): string | null {
 }
 
 function buildTeamFilterKey(teamId: number, remark?: string): string {
-  return remark ? `${teamId}${TEAM_FILTER_SEPARATOR}${remark}` : String(teamId)
+  return JSON.stringify([teamId, remark ?? null])
+}
+
+function parseTeamFilterKey(filterKey: string): { teamId: number; remark: string | null } | null {
+  try {
+    const value = JSON.parse(filterKey)
+    if (!Array.isArray(value) || value.length !== 2) return null
+    const [teamId, remark] = value
+    if (!Number.isFinite(teamId)) return null
+    if (remark !== null && typeof remark !== 'string') return null
+    return { teamId, remark }
+  } catch {
+    return null
+  }
 }
 
 function getTeamIdFromFilterKey(filterKey: string): number | null {
-  const [teamId] = filterKey.split(TEAM_FILTER_SEPARATOR, 1)
-  if (!teamId) return null
-  const parsed = Number(teamId)
-  return Number.isFinite(parsed) ? parsed : null
+  return parseTeamFilterKey(filterKey)?.teamId ?? null
 }
 
 function matchesTeamFilter(filterKey: string, event: { teamId: number; remarks: string }): boolean {
-  const [teamIdPart, remark] = filterKey.split(TEAM_FILTER_SEPARATOR)
-  if (Number(teamIdPart) !== event.teamId) return false
-  return remark == null ? true : getShortRemark(event.remarks) === remark
+  const parsed = parseTeamFilterKey(filterKey)
+  if (!parsed || parsed.teamId !== event.teamId) return false
+  return parsed.remark === null ? true : getShortRemark(event.remarks) === parsed.remark
 }
 
 export default function SchedulePage() {
