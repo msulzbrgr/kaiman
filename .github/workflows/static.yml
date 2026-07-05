@@ -66,11 +66,19 @@ jobs:
       github.event.repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve branch name
+        id: branch-name
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "value=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ github.event.ref }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Build preview target path
         id: preview-path
         uses: ./.github/actions/preview-path
         with:
-          branch-name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.ref }}
+          branch-name: ${{ steps.branch-name.outputs.value }}
       - name: Checkout gh-pages
         id: checkout-pages
         continue-on-error: true
