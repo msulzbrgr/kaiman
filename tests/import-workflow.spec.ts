@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 
 // MIH_test_schedule.xls contains:
@@ -6,7 +7,7 @@ import { expect, test } from '@playwright/test'
 //   11 people: Mick Darko, Dortie Ruben, Hereby Joe, Moveon Marry, Moser Steven,
 //              Ry Lin, O'Relly Sven, Hischier Marco, Hancock Herbie, Bergman Lars,
 //              Mickely Darko
-const FIXTURE_FILE = new URL('fixtures/MIH_test_schedule.xls', import.meta.url).pathname
+const FIXTURE_FILE = fileURLToPath(new URL('fixtures/MIH_test_schedule.xls', import.meta.url))
 const EXPECTED_EVENTS = 29
 const EXPECTED_TEAMS = 1
 const EXPECTED_PEOPLE = 11
