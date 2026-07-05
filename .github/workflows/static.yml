@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: "pages-${{ github.ref }}"
-  cancel-in-progress: true
+  group: "pages-gh-pages-writes"
+  cancel-in-progress: false
 
 jobs:
   deploy:
