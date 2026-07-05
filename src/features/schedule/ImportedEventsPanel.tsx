@@ -29,6 +29,10 @@ function getImportedEventDetail(event: ScheduleEvent): string {
   return event.art ?? ''
 }
 
+function appendDetail(label: string, detail: string): string {
+  return detail ? `${label} ${detail}` : label
+}
+
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
@@ -119,8 +123,8 @@ export default function ImportedEventsPanel({
                   const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
                   const detail = getImportedEventDetail(e)
-                  const title = `${getEventTypeIcon(e)}${detail ? ` ${detail}` : ''}`
-                  const accessibleLabel = `${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}${team ? ` · ${team.name}` : ''}`
+                  const title = appendDetail(getEventTypeIcon(e), detail)
+                  const accessibleLabel = `${appendDetail(getEventTypeLabel(e), detail)}${team ? ` · ${team.name}` : ''}`
                   const color = team?.color ?? '#2563eb'
 
                   return (
@@ -135,10 +139,8 @@ export default function ImportedEventsPanel({
                       title="Ziehen zum Verschieben · Klicken zum Öffnen"
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
-                      <span className="import-card-title">
-                        <span className="sr-only">{accessibleLabel}</span>
-                        <span aria-hidden="true">{title}</span>
-                      </span>
+                      <span className="sr-only">{accessibleLabel}</span>
+                      <span className="import-card-title" aria-hidden="true">{title}</span>
                       {team && <span className="import-card-team">{team.name}</span>}
                     </div>
                   )
