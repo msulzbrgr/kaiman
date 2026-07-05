@@ -9,13 +9,13 @@ type EventTypeLike =
 
 export const EVENT_TYPE_LEGEND_ITEMS = [
   { key: 'training-dry', icon: '🏋️', label: ART_TROCKENTRAINING },
-  { key: 'training-ice', icon: '⛸️', label: ART_EISTRAINING },
+  { key: 'training-ice', icon: '🏒', label: ART_EISTRAINING },
   { key: 'game-home', icon: '🏠', label: 'Heimspiel' },
   { key: 'game-away', icon: '🚌', label: 'Auswärtsspiel' },
 ] as const
 
 export function getEventTypeIcon(event: EventTypeLike): string {
-  if (event.type === 'training') return event.art === ART_EISTRAINING ? '⛸️' : '🏋️'
+  if (event.type === 'training') return event.art === ART_EISTRAINING ? '🏒' : '🏋️'
   return event.home ? '🏠' : '🚌'
 }
 
