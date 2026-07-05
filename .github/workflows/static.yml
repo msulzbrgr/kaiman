@@ -4,7 +4,8 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
+  delete:
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'delete' && !(github.event_name == 'pull_request' && github.event.action == 'closed')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -55,3 +57,46 @@ jobs:
           publish_branch: gh-pages
           destination_dir: ${{ steps.preview-path.outputs.path }}
           keep_files: true
+
+  cleanup-preview:
+    if: (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'delete' && github.event.ref_type == 'branch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build preview target path
+        id: preview-path
+        env:
+          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.ref }}
+        run: |
+          # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
+          BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
+          echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
+      - name: Checkout gh-pages
+        id: checkout-pages
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+      - name: Remove preview path
+        if: steps.checkout-pages.outcome == 'success'
+        env:
+          TARGET_PATH: ${{ steps.preview-path.outputs.path }}
+        run: |
+          cd gh-pages
+          if [ ! -d "$TARGET_PATH" ]; then
+            echo "No preview folder to remove: $TARGET_PATH"
+            exit 0
+          fi
+
+          rm -rf "$TARGET_PATH"
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No cleanup changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Cleanup preview $TARGET_PATH"
+          git push origin HEAD:gh-pages

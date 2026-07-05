@@ -38,6 +38,8 @@ Für die Veröffentlichung im Repository einmalig in GitHub **Settings → Pages
 - Pull Requests aus Branches dieses Repositories werden zusätzlich als Preview unter
   `https://msulzbrgr.github.io/kaiman/test/<branch-name>/` veröffentlicht
   (`<branch-name>` wird URL-tauglich normalisiert).
+- Beim Schließen eines Pull Requests oder beim Löschen eines Branches entfernt der Workflow
+  den zugehörigen Preview-Pfad unter `test/<branch-name>/` wieder aus `gh-pages`.
 - Der Workflow kann weiterhin manuell über den Actions-Tab gestartet werden.
 
 ## Funktionen
