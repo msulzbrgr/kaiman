@@ -66,14 +66,15 @@ jobs:
       github.event.repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Resolve branch name
         id: branch-name
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "value=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
           else
-            RAW_REF="${{ github.event.ref }}"
-            echo "value=${RAW_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
+            echo "value=${{ github.event.ref }}" >> "$GITHUB_OUTPUT"
           fi
       - name: Build preview target path
         id: preview-path
