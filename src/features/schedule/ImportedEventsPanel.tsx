@@ -26,7 +26,7 @@ function getImportedEventDetail(event: ScheduleEvent): string {
     return event.opponent ? `vs ${event.opponent}` : ''
   }
 
-  return event.art
+  return event.art ?? ''
 }
 
 function getImportedEventTitle(event: ScheduleEvent): string {
@@ -139,8 +139,9 @@ export default function ImportedEventsPanel({
                       title={`${getEventTypeLabel(e)} · Ziehen zum Verschieben · Klicken zum Öffnen`}
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
-                      <span className="import-card-title" aria-label={`${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}`}>
-                        {title}
+                      <span className="import-card-title">
+                        <span className="sr-only">{`${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}`}</span>
+                        <span aria-hidden="true">{title}</span>
                       </span>
                       {team && <span className="import-card-team">{team.name}</span>}
                     </div>
