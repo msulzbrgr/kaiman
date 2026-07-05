@@ -34,11 +34,9 @@ jobs:
       - name: Build preview target path
         if: github.event_name == 'pull_request'
         id: preview-path
-        run: |
-          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-          # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
-          BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
-          echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/preview-path
+        with:
+          branch-name: ${{ github.event.pull_request.head.ref }}
       - name: Deploy main site to root
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
@@ -59,17 +57,18 @@ jobs:
           keep_files: true
 
   cleanup-preview:
-    if: (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'delete' && github.event.ref_type == 'branch')
+    if: >
+      (github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'delete' && github.event.ref_type == 'branch')
     runs-on: ubuntu-latest
     steps:
       - name: Build preview target path
         id: preview-path
-        env:
-          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.ref }}
-        run: |
-          # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
-          BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
-          echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/preview-path
+        with:
+          branch-name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.ref }}
       - name: Checkout gh-pages
         id: checkout-pages
         continue-on-error: true
