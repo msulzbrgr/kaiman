@@ -12,12 +12,11 @@ const EXPECTED_EVENTS = 29
 const EXPECTED_TEAMS = 1
 const EXPECTED_PEOPLE = 11
 const EXPECTED_TEAM_NAME = 'EHC Mighty Oaks U12'
-// How many months to advance from the current month to reach August 2026.
-// Computed at build time so the test stays green as time passes.
-function monthsUntilAugust2026(): number {
+// Month delta (can be negative) from the current month to August 2026.
+function monthsDeltaToAugust2026(): number {
   const now = new Date()
   const target = new Date(2026, 7, 1) // month is 0-indexed; 7 = August
-  return Math.max(0, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()))
+  return (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth())
 }
 
 test('import MIH schedule: full workflow – import, preview, commit, schedule, teams, people', async ({ page }) => {
