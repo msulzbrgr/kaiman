@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
+import { duplicateEvent } from '../../db/repo'
 import { fmtDate, fmtTime } from '../../lib/dateParse'
 import type { ScheduleEvent } from '../../db/types'
 import { EVENT_TYPE_LEGEND_ITEMS, getEventTypeIcon, getEventTypeLabel } from './eventTypePresentation'
@@ -19,6 +20,7 @@ interface Props {
   canUndo: boolean
   canRedo: boolean
   canResetSelected: boolean
+  onDuplicate: (newId: number) => void
 }
 
 const DEFAULT_DURATION_MS = 90 * 60 * 1000
@@ -54,8 +56,14 @@ export default function ImportedEventsPanel({
   canUndo,
   canRedo,
   canResetSelected,
+  onDuplicate,
 }: Props) {
   const [dragContainer, setDragContainer] = useState<HTMLDivElement | null>(null)
+
+  async function handleDuplicate(eventId: number) {
+    const newId = await duplicateEvent(eventId)
+    onDuplicate(newId)
+  }
 
   const events = useLiveQuery(
     () => db.events.filter((e) => e.sourceId !== null && e.start !== null).sortBy('start'),
@@ -170,6 +178,13 @@ export default function ImportedEventsPanel({
                         <span className="sr-only">{accessibleLabel}</span>
                         <span className="import-card-title" aria-hidden="true">{title}</span>
                         {team && <span className="import-card-team">{team.name}</span>}
+                        <div className="import-card-actions">
+                          <button
+                            className="import-card-action-btn"
+                            title="Duplizieren"
+                            onClick={(ev) => { ev.stopPropagation(); void handleDuplicate(e.id!) }}
+                          >⧉</button>
+                        </div>
                       </div>
                     )
                   })}

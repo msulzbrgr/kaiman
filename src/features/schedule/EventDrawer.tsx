@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/db'
+import { duplicateEvent } from '../../db/repo'
 import { fmtDate } from '../../lib/dateParse'
 import { InlineText, InlineTextarea } from '../../components/Inline'
 import AttendeeEditor from './AttendeeEditor'
@@ -20,9 +21,11 @@ function fromLocalInput(s: string): string | null {
 export default function EventDrawer({
   eventId,
   onClose,
+  onDuplicate,
 }: {
   eventId: number
   onClose: () => void
+  onDuplicate: (newId: number) => void
 }) {
   const event = useLiveQuery(() => db.events.get(eventId), [eventId])
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
@@ -30,6 +33,11 @@ export default function EventDrawer({
   if (!event) return null
 
   const update = (patch: Partial<ScheduleEvent>) => db.events.update(eventId, patch)
+
+  async function handleDuplicate() {
+    const newId = await duplicateEvent(eventId)
+    onDuplicate(newId)
+  }
 
   async function deleteEvent() {
     if (!confirm('Event endgültig löschen?')) return
@@ -153,6 +161,7 @@ export default function EventDrawer({
             {event.status === 'cancelled' ? 'Reaktivieren' : 'Als „entfällt“ markieren'}
           </button>
           <span className="spacer" />
+          <button className="btn sm" title="Duplizieren" onClick={handleDuplicate}>⧉</button>
           <button className="btn sm danger" onClick={deleteEvent}>Löschen</button>
         </div>
       </div>
