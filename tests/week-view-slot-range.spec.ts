@@ -113,3 +113,21 @@ test('team filters include short remarks only and filter matching events', async
   await page.getByLabel('EHC Zuchwil Regio U12 · ICE').check()
   await expect(page.locator('.fc-timegrid-event')).toHaveCount(1)
 })
+
+test('imported panel can be shrunk or collapsed and no longer shows the wrong drag hint', async ({ page }) => {
+  await page.goto('/')
+
+  await expect(page.getByText('Karte in den Kalender ziehen zum Verschieben')).toHaveCount(0)
+
+  const panel = page.locator('.schedule-main-lower')
+  await expect(panel).toHaveClass(/schedule-main-lower--expanded/)
+
+  await page.getByRole('button', { name: 'Kompakt' }).click()
+  await expect(panel).toHaveClass(/schedule-main-lower--compact/)
+
+  await page.getByRole('button', { name: 'Einklappen' }).click()
+  await expect(panel).toHaveClass(/schedule-main-lower--collapsed/)
+
+  await page.getByRole('button', { name: 'Ausklappen' }).click()
+  await expect(panel).toHaveClass(/schedule-main-lower--expanded/)
+})

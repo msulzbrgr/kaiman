@@ -32,6 +32,8 @@ interface EventTimePatch {
   originalEnd?: string | null
 }
 
+type ImportedPanelViewMode = 'expanded' | 'compact' | 'collapsed'
+
 function toSlotTime(totalMinutes: number): string {
   const clamped = Math.min(Math.max(totalMinutes, 0), 24 * 60)
   const hours = Math.floor(clamped / 60)
@@ -114,6 +116,7 @@ export default function SchedulePage() {
   const [redoStack, setRedoStack] = useState<EventTimeChange[]>([])
   const [filterOpen, setFilterOpen] = useState(false)
   const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null)
+  const [importedPanelViewMode, setImportedPanelViewMode] = useState<ImportedPanelViewMode>('expanded')
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
   const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
@@ -456,13 +459,20 @@ export default function SchedulePage() {
             onExternalDrop={handleExternalDrop}
           />
         </div>
-        <div className="schedule-main-lower">
+        <div className={`schedule-main-lower schedule-main-lower--${importedPanelViewMode}`}>
           <ImportedEventsPanel
             onSelect={(id) => {
               setSelectedImportedEventId(id)
               setOpenId(id)
             }}
             selectedId={selectedImportedEventId}
+            viewMode={importedPanelViewMode}
+            onToggleCompact={() =>
+              setImportedPanelViewMode((mode) => (mode === 'compact' ? 'expanded' : 'compact'))
+            }
+            onToggleCollapsed={() =>
+              setImportedPanelViewMode((mode) => (mode === 'collapsed' ? 'expanded' : 'collapsed'))
+            }
             onUndo={undoMove}
             onRedo={redoMove}
             onResetSelected={resetSelectedImportedCard}

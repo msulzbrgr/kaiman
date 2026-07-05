@@ -8,6 +8,9 @@ import type { ScheduleEvent } from '../../db/types'
 interface Props {
   onSelect: (id: number) => void
   selectedId: number | null
+  viewMode: 'expanded' | 'compact' | 'collapsed'
+  onToggleCompact: () => void
+  onToggleCollapsed: () => void
   onUndo: () => void
   onRedo: () => void
   onResetSelected: () => void
@@ -23,6 +26,9 @@ const MS_PER_MINUTE = 60_000
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
+  viewMode,
+  onToggleCompact,
+  onToggleCollapsed,
   onUndo,
   onRedo,
   onResetSelected,
@@ -31,6 +37,7 @@ export default function ImportedEventsPanel({
   canResetSelected,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const isCollapsed = viewMode === 'collapsed'
 
   const events = useLiveQuery(
     () => db.events.filter((e) => e.sourceId !== null && e.start !== null).sortBy('start'),
@@ -41,7 +48,7 @@ export default function ImportedEventsPanel({
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!containerRef.current || isCollapsed) return
     const draggable = new Draggable(containerRef.current, {
       itemSelector: '.import-card',
       eventData: (el) => ({
@@ -52,7 +59,7 @@ export default function ImportedEventsPanel({
       }),
     })
     return () => draggable.destroy()
-  }, [])
+  }, [grouped.length, isCollapsed])
 
   const grouped = useMemo(() => {
     if (!events?.length) return []
@@ -70,8 +77,23 @@ export default function ImportedEventsPanel({
     <div className="imported-panel">
       <div className="imported-panel-header">
         <span className="imported-panel-title">Importierter Spielplan</span>
-        <span className="muted imported-panel-hint">Karte in den Kalender ziehen zum Verschieben</span>
         <span className="spacer" />
+        <button
+          className="btn sm"
+          type="button"
+          aria-pressed={viewMode === 'compact'}
+          onClick={onToggleCompact}
+        >
+          {viewMode === 'compact' ? 'Normal' : 'Kompakt'}
+        </button>
+        <button
+          className="btn sm"
+          type="button"
+          aria-expanded={!isCollapsed}
+          onClick={onToggleCollapsed}
+        >
+          {isCollapsed ? 'Ausklappen' : 'Einklappen'}
+        </button>
         <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
         <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
         <button
@@ -83,7 +105,7 @@ export default function ImportedEventsPanel({
           Karte zurücksetzen
         </button>
       </div>
-      {grouped.length === 0 ? (
+      {isCollapsed ? null : grouped.length === 0 ? (
         <p className="muted" style={{ padding: '0 14px', margin: '8px 0' }}>
           Keine importierten Events vorhanden.
         </p>
