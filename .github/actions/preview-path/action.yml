@@ -1,0 +1,22 @@
+name: Build preview path
+description: Build a normalized GitHub Pages preview path from a branch name
+inputs:
+  branch-name:
+    description: Source branch name
+    required: true
+outputs:
+  path:
+    description: Normalized preview path
+    value: ${{ steps.normalize.outputs.path }}
+runs:
+  using: composite
+  steps:
+    - name: Normalize branch name
+      id: normalize
+      shell: bash
+      env:
+        BRANCH_NAME: ${{ inputs.branch-name }}
+      run: |
+        # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
+        BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
+        echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
