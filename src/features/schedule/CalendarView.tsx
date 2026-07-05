@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { EventContentArg } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -16,6 +16,16 @@ export interface FcEvent {
   remarks?: string
   color: string
   cancelled: boolean
+}
+
+export interface CalendarSyncTarget {
+  viewType: string
+  anchorDate: string
+}
+
+export interface CalendarViewState {
+  viewType: string
+  anchorDate: string
 }
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop'
@@ -66,6 +76,9 @@ export default function CalendarView({
   onEventDrop,
   onEventResize,
   onExternalDrop,
+  syncTarget,
+  onViewStateChange,
+  showToolbar = true,
 }: {
   events: FcEvent[]
   onSelect: (id: number) => void
@@ -77,8 +90,12 @@ export default function CalendarView({
   onEventDrop?: (eventId: number, start: Date, end: Date | null) => void
   onEventResize?: (eventId: number, start: Date, end: Date | null) => void
   onExternalDrop?: (draggedEl: HTMLElement, date: Date) => void
+  syncTarget?: CalendarSyncTarget | null
+  onViewStateChange?: (state: CalendarViewState) => void
+  showToolbar?: boolean
 }) {
   const [bp, setBp] = useState<Breakpoint>(() => getBreakpoint(window.innerWidth))
+  const calendarRef = useRef<FullCalendar>(null)
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>
@@ -99,9 +116,21 @@ export default function CalendarView({
     ? { left: 'prev,next today', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth,listMonth' }
     : { left: 'prev,next today', center: 'title', right: 'timeGridDay,workWeek,timeGridWeek,twoWeek,dayGridMonth,listMonth' }
 
+  useEffect(() => {
+    if (!syncTarget) return
+    const api = calendarRef.current?.getApi()
+    if (!api) return
+    const currentView = api.view.type
+    const currentDate = api.view.currentStart.toISOString().slice(0, 10)
+    const nextDate = syncTarget.anchorDate.slice(0, 10)
+    if (currentView === syncTarget.viewType && currentDate === nextDate) return
+    api.changeView(syncTarget.viewType, syncTarget.anchorDate)
+  }, [syncTarget])
+
   return (
     <div className="calendar-wrap">
       <FullCalendar
+        ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, multiMonthPlugin, interactionPlugin]}
         initialView={isMobile ? 'listWeek' : 'dayGridMonth'}
         firstDay={1}
@@ -109,7 +138,7 @@ export default function CalendarView({
         height="100%"
         nowIndicator
         eventDisplay="block"
-        headerToolbar={headerToolbar}
+        headerToolbar={showToolbar ? headerToolbar : false}
         buttonText={{
           today: 'Heute',
           month: 'Monat',
@@ -149,6 +178,10 @@ export default function CalendarView({
         }
         datesSet={(arg) => {
           onVisibleRangeChange({ start: arg.start, end: arg.end })
+          onViewStateChange?.({
+            viewType: arg.view.type,
+            anchorDate: arg.view.currentStart.toISOString(),
+          })
         }}
         eventContent={renderEventContent}
         events={events.map((e) => ({

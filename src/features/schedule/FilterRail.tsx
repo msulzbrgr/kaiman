@@ -17,13 +17,16 @@ interface Props {
   showGame: boolean
   combineAnd: boolean
   mobileOpen: boolean
+  side?: 'left' | 'right'
+  collapsed?: boolean
   onToggleTeamFilter: (key: string) => void
   onTogglePerson: (id: number) => void
   onSetType: (kind: 'training' | 'game', v: boolean) => void
   onSetCombine: (v: boolean) => void
   onClear: () => void
-  onCreateEvent: () => void
+  onCreateEvent?: () => void
   onMobileClose: () => void
+  onToggleCollapsed?: () => void
 }
 
 export default function FilterRail(p: Props) {
@@ -32,20 +35,34 @@ export default function FilterRail(p: Props) {
     pe.displayName.toLowerCase().includes(q.toLowerCase()),
   )
   const anyFilter = p.selectedTeamFilters.size > 0 || p.selectedPeople.size > 0
+  const sideClassName = p.side === 'right' ? 'filter-rail--right' : ''
+
+  if (p.collapsed) {
+    return (
+      <div className={`filter-rail-collapsed ${sideClassName}`}>
+        <button className="btn sm" type="button" onClick={p.onToggleCollapsed}>
+          {p.side === 'right' ? '◀ Filter' : 'Filter ▶'}
+        </button>
+      </div>
+    )
+  }
 
   return (
-    <div className={`filter-rail${p.mobileOpen ? ' mobile-open' : ''}`}>
+    <div className={`filter-rail ${sideClassName}${p.mobileOpen ? ' mobile-open' : ''}`}>
       <div className="filter-rail-header">
         <div className="filter-drag-handle" />
         <div className="filter-close-row">
           <button className="btn sm" onClick={p.onMobileClose}>✕ Schließen</button>
         </div>
       </div>
-      <button className="btn primary" style={{ width: '100%', marginBottom: 14 }} onClick={p.onCreateEvent}>
-        + Neues Event
-      </button>
+      {p.onCreateEvent && (
+        <button className="btn primary" style={{ width: '100%', marginBottom: 14 }} onClick={p.onCreateEvent}>
+          + Neues Event
+        </button>
+      )}
       <div className="row">
         <h3 style={{ flex: 1 }}>Filter</h3>
+        {p.onToggleCollapsed && <button className="btn sm" onClick={p.onToggleCollapsed}>Einklappen</button>}
         {anyFilter && (
           <button className="btn sm" onClick={p.onClear}>Zurücksetzen</button>
         )}
