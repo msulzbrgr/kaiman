@@ -23,14 +23,15 @@ const MS_PER_MINUTE = 60_000
 
 function getImportedEventDetail(event: ScheduleEvent): string {
   if (event.type === 'game') {
-    return event.opponent ? ` vs ${event.opponent}` : ''
+    return event.opponent ? `vs ${event.opponent}` : ''
   }
 
-  return event.art ? ` ${event.art}` : ''
+  return event.art
 }
 
 function getImportedEventTitle(event: ScheduleEvent): string {
-  return `${getEventTypeIcon(event)}${getImportedEventDetail(event)}`
+  const detail = getImportedEventDetail(event)
+  return `${getEventTypeIcon(event)}${detail ? ` ${detail}` : ''}`
 }
 
 export default function ImportedEventsPanel({
@@ -138,10 +139,8 @@ export default function ImportedEventsPanel({
                       title={`${getEventTypeLabel(e)} · Ziehen zum Verschieben · Klicken zum Öffnen`}
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
-                      <span className="import-card-title">
-                        <span className="sr-only">{getEventTypeLabel(e)} </span>
-                        <span aria-hidden="true">{getEventTypeIcon(e)}</span>
-                        {detail}
+                      <span className="import-card-title" aria-label={`${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}`}>
+                        {title}
                       </span>
                       {team && <span className="import-card-team">{team.name}</span>}
                     </div>
