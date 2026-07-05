@@ -161,7 +161,7 @@ export default function EventDrawer({
             {event.status === 'cancelled' ? 'Reaktivieren' : 'Als „entfällt“ markieren'}
           </button>
           <span className="spacer" />
-          <button className="btn sm" title="Duplizieren" onClick={handleDuplicate}>⧉</button>
+          <button className="btn sm" type="button" title="Duplizieren" aria-label="Duplizieren" onClick={handleDuplicate}>⧉</button>
           <button className="btn sm danger" onClick={deleteEvent}>Löschen</button>
         </div>
       </div>
