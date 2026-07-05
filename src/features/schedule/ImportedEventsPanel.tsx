@@ -180,8 +180,10 @@ export default function ImportedEventsPanel({
                         {team && <span className="import-card-team">{team.name}</span>}
                         <div className="import-card-actions">
                           <button
+                            type="button"
                             className="import-card-action-btn"
                             title="Duplizieren"
+                            aria-label="Duplizieren"
                             onClick={(ev) => { ev.stopPropagation(); void handleDuplicate(e.id!) }}
                           >⧉</button>
                         </div>
