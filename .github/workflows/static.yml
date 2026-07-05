@@ -72,7 +72,8 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "value=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=${{ github.event.ref }}" >> "$GITHUB_OUTPUT"
+            RAW_REF="${{ github.event.ref }}"
+            echo "value=${RAW_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
           fi
       - name: Build preview target path
         id: preview-path
