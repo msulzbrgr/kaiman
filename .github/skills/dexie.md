@@ -110,7 +110,7 @@ await db.transaction('rw', db.events, db.rosterMemberships, db.teams, async () =
 
 ## Reactive queries with `useLiveQuery`
 
-Always provide a default value (third argument) to avoid `undefined` flash on first render:
+Provide a default value (third argument) when you need a non-`undefined` initial value (especially for array queries) to avoid an `undefined` flash on first render:
 
 ```tsx
 import { useLiveQuery } from 'dexie-react-hooks'
