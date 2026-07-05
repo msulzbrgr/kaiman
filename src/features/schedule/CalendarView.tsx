@@ -37,9 +37,10 @@ function formatEventTimeRange(start: Date | null, end: Date | null): string {
 }
 
 function renderEventContent(arg: EventContentArg) {
-  const remarks = getNonEmptyText(
+  const remarksText = getNonEmptyText(
     typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks : null,
   )
+  const remarks = remarksText !== null && remarksText.length <= 20 ? remarksText : null
   const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
   return (
     <div className="schedule-calendar-event">
