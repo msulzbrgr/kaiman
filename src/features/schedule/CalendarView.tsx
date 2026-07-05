@@ -19,6 +19,7 @@ export interface FcEvent {
 }
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop'
+const MAX_VISIBLE_REMARK_LENGTH = 20
 
 function getBreakpoint(w: number): Breakpoint {
   if (w < 640) return 'mobile'
@@ -37,9 +38,11 @@ function formatEventTimeRange(start: Date | null, end: Date | null): string {
 }
 
 function renderEventContent(arg: EventContentArg) {
-  const remarks = getNonEmptyText(
+  const remarksText = getNonEmptyText(
     typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks : null,
   )
+  const remarks =
+    remarksText !== null && remarksText.length <= MAX_VISIBLE_REMARK_LENGTH ? remarksText : null
   const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
   return (
     <div className="schedule-calendar-event">

@@ -114,30 +114,42 @@ test('team filters include short remarks only and filter matching events', async
   await expect(page.locator('.fc-timegrid-event')).toHaveCount(1)
 })
 
-test('calendar events show time range and remarks in week, 2-week, and month views', async ({ page }) => {
+test('calendar events show time range and only short remarks in week, 2-week, and month views', async ({ page }) => {
+  const maxVisibleRemarkLength = 20
   const monday = mondayOfCurrentWeek()
 
-  const start = new Date(monday)
-  start.setDate(monday.getDate() + 1)
-  start.setHours(10, 0, 0, 0)
-  const end = new Date(start)
-  end.setHours(11, 0, 0, 0)
+  const shortStart = new Date(monday)
+  shortStart.setDate(monday.getDate() + 1)
+  shortStart.setHours(10, 0, 0, 0)
+  const shortEnd = new Date(shortStart)
+  shortEnd.setHours(11, 0, 0, 0)
+  const longStart = new Date(monday)
+  longStart.setDate(monday.getDate() + 2)
+  longStart.setHours(10, 0, 0, 0)
+  const longEnd = new Date(longStart)
+  longEnd.setHours(11, 0, 0, 0)
+  const shortRemark = 'x'.repeat(maxVisibleRemarkLength)
+  const longRemark = 'x'.repeat(maxVisibleRemarkLength + 1)
 
   await page.goto('/')
   await createTeam(page, 'EHC Zuchwil Regio U12')
-  await createEvent(page, start, end, 'Treffpunkt 09:30')
+  await createEvent(page, shortStart, shortEnd, shortRemark)
+  await createEvent(page, longStart, longEnd, longRemark)
 
   await page.locator('button.fc-timeGridWeek-button').click()
   await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
-  await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+  await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-remarks')).toHaveCount(1)
+  await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-remarks').first()).toHaveText(shortRemark)
 
   await page.locator('button.fc-twoWeek-button').click()
   await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
-  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks')).toHaveCount(1)
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText(shortRemark)
 
   await page.locator('button.fc-dayGridMonth-button').click()
   await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
-  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks')).toHaveCount(1)
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText(shortRemark)
 })
 
 test('imported panel can be shrunk or collapsed and no longer shows the wrong drag hint', async ({ page }) => {
