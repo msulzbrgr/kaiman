@@ -58,7 +58,7 @@ src/
 - Use compound indexes (`[a+b]`) for multi-column lookups.
 - Wrap multi-step mutations in `db.transaction('rw', …)`.
 - Every entity type is defined in `src/db/types.ts`; `id` is always `number | undefined` (auto-increment).
-- `useLiveQuery(query, deps, defaultValue)` — always provide a default value (`[]` or `undefined`) as the third argument.
+- `useLiveQuery(query, deps, defaultValue)` — pass a default value (e.g. `[]`) when you need a non-`undefined` initial value (especially for array queries).
 
 ### Import system
 
