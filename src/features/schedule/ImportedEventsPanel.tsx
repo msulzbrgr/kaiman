@@ -29,11 +29,6 @@ function getImportedEventDetail(event: ScheduleEvent): string {
   return event.art ?? ''
 }
 
-function getImportedEventTitle(event: ScheduleEvent): string {
-  const detail = getImportedEventDetail(event)
-  return `${getEventTypeIcon(event)}${detail ? ` ${detail}` : ''}`
-}
-
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
@@ -124,7 +119,7 @@ export default function ImportedEventsPanel({
                   const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
                   const detail = getImportedEventDetail(e)
-                  const title = getImportedEventTitle(e)
+                  const title = `${getEventTypeIcon(e)}${detail ? ` ${detail}` : ''}`
                   const color = team?.color ?? '#2563eb'
 
                   return (
