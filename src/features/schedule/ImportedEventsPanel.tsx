@@ -47,6 +47,18 @@ export default function ImportedEventsPanel({
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
 
+  const grouped = useMemo(() => {
+    if (!events?.length) return []
+    const map = new Map<string, typeof events>()
+    for (const e of events) {
+      if (!e.start) continue
+      const day = e.start.slice(0, 10)
+      if (!map.has(day)) map.set(day, [])
+      map.get(day)!.push(e)
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [events])
+
   useEffect(() => {
     if (!containerRef.current || isCollapsed) return
     const draggable = new Draggable(containerRef.current, {
@@ -60,18 +72,6 @@ export default function ImportedEventsPanel({
     })
     return () => draggable.destroy()
   }, [grouped.length, isCollapsed])
-
-  const grouped = useMemo(() => {
-    if (!events?.length) return []
-    const map = new Map<string, typeof events>()
-    for (const e of events) {
-      if (!e.start) continue
-      const day = e.start.slice(0, 10)
-      if (!map.has(day)) map.set(day, [])
-      map.get(day)!.push(e)
-    }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [events])
 
   return (
     <div className="imported-panel">
