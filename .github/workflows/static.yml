@@ -34,6 +34,7 @@ jobs:
         id: preview-path
         run: |
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
           BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
           echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
       - name: Deploy main site to root
@@ -45,6 +46,7 @@ jobs:
           publish_branch: gh-pages
           keep_files: true
       - name: Deploy PR preview under /test/<branch-name>
+        # Fork PRs do not get previews because the workflow token cannot safely push gh-pages.
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peaceiris/actions-gh-pages@v4
         with:
