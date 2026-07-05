@@ -21,14 +21,16 @@ const DEFAULT_DURATION_MS = 90 * 60 * 1000
 const MIN_EVENT_DURATION_MINUTES = 15
 const MS_PER_MINUTE = 60_000
 
-function getImportedEventTitle(event: ScheduleEvent): string {
-  const icon = getEventTypeIcon(event)
-
+function getImportedEventDetail(event: ScheduleEvent): string {
   if (event.type === 'game') {
-    return `${icon}${event.opponent ? ` vs ${event.opponent}` : ''}`
+    return event.opponent ? ` vs ${event.opponent}` : ''
   }
 
-  return `${icon}${event.art ? ` ${event.art}` : ''}`
+  return event.art ? ` ${event.art}` : ''
+}
+
+function getImportedEventTitle(event: ScheduleEvent): string {
+  return `${getEventTypeIcon(event)}${getImportedEventDetail(event)}`
 }
 
 export default function ImportedEventsPanel({
@@ -120,6 +122,7 @@ export default function ImportedEventsPanel({
                       : DEFAULT_DURATION_MS
                   const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
+                  const detail = getImportedEventDetail(e)
                   const title = getImportedEventTitle(e)
                   const color = team?.color ?? '#2563eb'
 
@@ -135,7 +138,11 @@ export default function ImportedEventsPanel({
                       title={`${getEventTypeLabel(e)} · Ziehen zum Verschieben · Klicken zum Öffnen`}
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
-                      <span className="import-card-title">{title}</span>
+                      <span className="import-card-title">
+                        <span className="sr-only">{getEventTypeLabel(e)} </span>
+                        <span aria-hidden="true">{getEventTypeIcon(e)}</span>
+                        {detail}
+                      </span>
                       {team && <span className="import-card-team">{team.name}</span>}
                     </div>
                   )
