@@ -1,9 +1,8 @@
 import type { EventType } from '../../db/types'
 
-type EventTypeLike = {
-  type: EventType
-  home?: boolean
-}
+type EventTypeLike =
+  | { type: Extract<EventType, 'training'> }
+  | { type: Extract<EventType, 'game'>; home: boolean }
 
 export const EVENT_TYPE_LEGEND_ITEMS = [
   { key: 'training', icon: '🏋️', label: 'Training' },

@@ -21,6 +21,16 @@ const DEFAULT_DURATION_MS = 90 * 60 * 1000
 const MIN_EVENT_DURATION_MINUTES = 15
 const MS_PER_MINUTE = 60_000
 
+function getImportedEventTitle(event: ScheduleEvent): string {
+  const icon = getEventTypeIcon(event)
+
+  if (event.type === 'game') {
+    return `${icon}${event.opponent ? ` vs ${event.opponent}` : ''}`
+  }
+
+  return `${icon}${event.art ? ` ${event.art}` : ''}`
+}
+
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
@@ -110,11 +120,7 @@ export default function ImportedEventsPanel({
                       : DEFAULT_DURATION_MS
                   const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
-                  const detail =
-                    e.type === 'game'
-                      ? e.opponent ? ` vs ${e.opponent}` : ''
-                      : e.art ? ` ${e.art}` : ''
-                  const title = `${getEventTypeIcon(e)}${detail}`
+                  const title = getImportedEventTitle(e)
                   const color = team?.color ?? '#2563eb'
 
                   return (
