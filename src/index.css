@@ -193,6 +193,21 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   opacity: 0.9;
 }
 
+.schedule-calendar-event-attendees {
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-calendar-event-conflict {
+  flex-shrink: 0;
+  cursor: help;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
 /* Table scroll wrapper (mobile) */
 .table-scroll-wrap {
   overflow-x: auto;

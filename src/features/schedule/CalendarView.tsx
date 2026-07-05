@@ -16,6 +16,9 @@ export interface FcEvent {
   remarks?: string
   color: string
   cancelled: boolean
+  playerCount?: number
+  coachCount?: number
+  conflictingPeople?: string[]
 }
 
 export interface CalendarSyncTarget {
@@ -54,12 +57,41 @@ function renderEventContent(arg: EventContentArg) {
   const remarks =
     remarksText !== null && remarksText.length <= MAX_VISIBLE_REMARK_LENGTH ? remarksText : null
   const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
+
+  const playerCount =
+    typeof arg.event.extendedProps.playerCount === 'number'
+      ? arg.event.extendedProps.playerCount
+      : undefined
+  const coachCount =
+    typeof arg.event.extendedProps.coachCount === 'number'
+      ? arg.event.extendedProps.coachCount
+      : undefined
+  const conflictingPeople: string[] = Array.isArray(arg.event.extendedProps.conflictingPeople)
+    ? (arg.event.extendedProps.conflictingPeople as string[])
+    : []
+
+  const infoParts: string[] = []
+  if (coachCount !== undefined && coachCount > 0)
+    infoParts.push(`${coachCount} Coach${coachCount !== 1 ? 'es' : ''}`)
+  if (playerCount !== undefined && playerCount > 0) infoParts.push(`${playerCount} Spieler`)
+
   return (
     <div className="schedule-calendar-event">
       <div className="schedule-calendar-event-mainline">
+        {conflictingPeople.length > 0 && (
+          <span
+            className="schedule-calendar-event-conflict"
+            title={`Doppelt eingeteilt: ${conflictingPeople.join(', ')}`}
+          >
+            ⚠️
+          </span>
+        )}
         {timeText && <span className="schedule-calendar-event-time">{timeText}</span>}
         <span className="schedule-calendar-event-title">{arg.event.title}</span>
       </div>
+      {infoParts.length > 0 && (
+        <div className="schedule-calendar-event-attendees">{infoParts.join(' · ')}</div>
+      )}
       {remarks && <div className="schedule-calendar-event-remarks">{remarks}</div>}
     </div>
   )
@@ -190,6 +222,9 @@ export default function CalendarView({
           start: e.start,
           end: e.end,
           remarks: e.remarks,
+          playerCount: e.playerCount,
+          coachCount: e.coachCount,
+          conflictingPeople: e.conflictingPeople,
           backgroundColor: e.cancelled ? '#c2c6cd' : e.color,
           borderColor: e.cancelled ? '#c2c6cd' : e.color,
           classNames: e.cancelled ? ['cancelled'] : [],

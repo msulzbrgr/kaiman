@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/db'
 import { exportBackup, downloadBackup, type BackupFile } from '../../db/backup'
-import type { Assignment, Person, ScheduleEvent, Team } from '../../db/types'
+import type { Assignment, Person, Role, ScheduleEvent, Team } from '../../db/types'
 import { getNonEmptyText } from '../../lib/text'
 import FilterRail, { type TeamFilterOption } from './FilterRail'
 import CalendarView, { type CalendarSyncTarget, type FcEvent } from './CalendarView'
@@ -157,6 +157,61 @@ function buildPeopleByEvent(assignments: Assignment[]): Map<number, Set<number>>
   return m
 }
 
+function buildAttendeeCountsByEvent(
+  assignments: Assignment[],
+  roleById: Map<number, Role>,
+): Map<number, { playerCount: number; coachCount: number }> {
+  const result = new Map<number, { playerCount: number; coachCount: number }>()
+  for (const a of assignments) {
+    const role = roleById.get(a.roleId)
+    if (!role) continue
+    const counts = result.get(a.eventId) ?? { playerCount: 0, coachCount: 0 }
+    if (role.key === 'player') counts.playerCount++
+    else if (role.key.includes('coach')) counts.coachCount++
+    result.set(a.eventId, counts)
+  }
+  return result
+}
+
+function eventsOverlap(a: ScheduleEvent, b: ScheduleEvent): boolean {
+  if (!a.start || !b.start) return false
+  const aStart = new Date(a.start).getTime()
+  const aEnd = a.end ? new Date(a.end).getTime() : aStart
+  const bStart = new Date(b.start).getTime()
+  const bEnd = b.end ? new Date(b.end).getTime() : bStart
+  return aStart < bEnd && bStart < aEnd
+}
+
+function buildConflictsByEvent(
+  events: ScheduleEvent[],
+  peopleByEvent: Map<number, Set<number>>,
+  personById: Map<number, Person>,
+): Map<number, string[]> {
+  const result = new Map<number, string[]>()
+  const active = events.filter((e) => e.id !== undefined && e.start && e.status === 'active')
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const a = active[i]
+      const b = active[j]
+      if (!eventsOverlap(a, b)) continue
+      const aPeople = peopleByEvent.get(a.id!) ?? new Set<number>()
+      const bPeople = peopleByEvent.get(b.id!) ?? new Set<number>()
+      const sharedIds = [...aPeople].filter((id) => bPeople.has(id))
+      if (sharedIds.length === 0) continue
+      const names = sharedIds.map((id) => personById.get(id)?.displayName ?? `#${id}`)
+      const aList = result.get(a.id!) ?? []
+      const bList = result.get(b.id!) ?? []
+      for (const name of names) {
+        if (!aList.includes(name)) aList.push(name)
+        if (!bList.includes(name)) bList.push(name)
+      }
+      result.set(a.id!, aList)
+      result.set(b.id!, bList)
+    }
+  }
+  return result
+}
+
 function buildFcEvents({
   events,
   teamById,
@@ -166,6 +221,8 @@ function buildFcEvents({
   showTraining,
   showGame,
   combineAnd,
+  attendeeCountsByEvent,
+  conflictsByEvent,
 }: {
   events: ScheduleEvent[]
   teamById: Map<number, Team>
@@ -175,6 +232,8 @@ function buildFcEvents({
   showTraining: boolean
   showGame: boolean
   combineAnd: boolean
+  attendeeCountsByEvent: Map<number, { playerCount: number; coachCount: number }>
+  conflictsByEvent: Map<number, string[]>
 }): FcEvent[] {
   return events
     .filter((event) => event.start)
@@ -195,6 +254,8 @@ function buildFcEvents({
       const detail = event.type === 'training' ? '' : event.opponent ? ` vs ${event.opponent}` : ''
       const teamLabel = team ? shortTeamLabel(team.name) : '?'
       const title = `${getEventTypeIcon(event)} ${teamLabel}${detail}`
+      const counts = attendeeCountsByEvent.get(event.id!)
+      const conflicts = conflictsByEvent.get(event.id!) ?? []
       return {
         id: String(event.id),
         title: event.status === 'cancelled' ? `[Entfällt] ${title}` : title,
@@ -203,6 +264,9 @@ function buildFcEvents({
         remarks: getNonEmptyText(event.remarks) ?? undefined,
         color: team?.color ?? '#2563eb',
         cancelled: event.status === 'cancelled',
+        playerCount: counts?.playerCount,
+        coachCount: counts?.coachCount,
+        conflictingPeople: conflicts.length > 0 ? conflicts : undefined,
       }
     })
 }
@@ -272,6 +336,7 @@ export default function SchedulePage() {
   const people = useLiveQuery(() => db.people.orderBy('displayName').toArray(), [], [])
   const events = useLiveQuery(() => db.events.toArray(), [], [])
   const assignments = useLiveQuery(() => db.assignments.toArray(), [], [])
+  const roles = useLiveQuery(() => db.roles.toArray(), [], [])
 
   const [selectedTeamFilters, setSelectedTeamFilters] = useState<Set<string>>(new Set())
   const [selectedPeople, setSelectedPeople] = useState<Set<number>>(new Set())
@@ -325,6 +390,8 @@ export default function SchedulePage() {
 
   const teamById = useMemo(() => new Map(teams.map((team) => [team.id!, team])), [teams])
   const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
+  const roleById = useMemo(() => new Map(roles.map((role) => [role.id!, role])), [roles])
+  const personById = useMemo(() => new Map(people.map((person) => [person.id!, person])), [people])
   const selectedImportedEvent =
     selectedImportedEventId == null ? null : eventById.get(selectedImportedEventId) ?? null
   const canResetSelectedImportedEvent =
@@ -350,6 +417,14 @@ export default function SchedulePage() {
   }, [events])
 
   const peopleByEvent = useMemo(() => buildPeopleByEvent(assignments), [assignments])
+  const attendeeCountsByEvent = useMemo(
+    () => buildAttendeeCountsByEvent(assignments, roleById),
+    [assignments, roleById],
+  )
+  const conflictsByEvent = useMemo(
+    () => buildConflictsByEvent(events, peopleByEvent, personById),
+    [events, peopleByEvent, personById],
+  )
 
   const selectedSplitSnapshot = useMemo(
     () => splitSnapshots.find((snapshot) => snapshot.id === selectedSplitSnapshotId) ?? null,
@@ -379,6 +454,31 @@ export default function SchedulePage() {
   const splitTeamById = useMemo(() => new Map(splitTeams.map((team) => [team.id!, team])), [splitTeams])
   const splitPeopleByEvent = useMemo(() => buildPeopleByEvent(splitAssignments), [splitAssignments])
 
+  const splitRoles = useMemo(() => {
+    const rows = selectedSplitSnapshot?.backup.data.roles
+    return (rows ?? []) as Role[]
+  }, [selectedSplitSnapshot])
+
+  const splitRoleById = useMemo(
+    () => new Map(splitRoles.map((role) => [role.id!, role])),
+    [splitRoles],
+  )
+
+  const splitPersonById = useMemo(
+    () => new Map(splitPeople.map((person) => [person.id!, person])),
+    [splitPeople],
+  )
+
+  const splitAttendeeCountsByEvent = useMemo(
+    () => buildAttendeeCountsByEvent(splitAssignments, splitRoleById),
+    [splitAssignments, splitRoleById],
+  )
+
+  const splitConflictsByEvent = useMemo(
+    () => buildConflictsByEvent(splitEvents, splitPeopleByEvent, splitPersonById),
+    [splitEvents, splitPeopleByEvent, splitPersonById],
+  )
+
   const teamFilters = useMemo(() => buildTeamFilters(events, teams), [events, teams])
   const rightTeamFilters = useMemo(() => buildTeamFilters(splitEvents, splitTeams), [splitEvents, splitTeams])
 
@@ -393,8 +493,10 @@ export default function SchedulePage() {
         showTraining,
         showGame,
         combineAnd,
+        attendeeCountsByEvent,
+        conflictsByEvent,
       }),
-    [events, teamById, peopleByEvent, selectedTeamFilters, selectedPeople, showTraining, showGame, combineAnd],
+    [events, teamById, peopleByEvent, selectedTeamFilters, selectedPeople, showTraining, showGame, combineAnd, attendeeCountsByEvent, conflictsByEvent],
   )
 
   const rightFcEvents = useMemo(
@@ -408,6 +510,8 @@ export default function SchedulePage() {
         showTraining: rightShowTraining,
         showGame: rightShowGame,
         combineAnd: rightCombineAnd,
+        attendeeCountsByEvent: splitAttendeeCountsByEvent,
+        conflictsByEvent: splitConflictsByEvent,
       }),
     [
       splitEvents,
@@ -418,6 +522,8 @@ export default function SchedulePage() {
       rightShowTraining,
       rightShowGame,
       rightCombineAnd,
+      splitAttendeeCountsByEvent,
+      splitConflictsByEvent,
     ],
   )
 
