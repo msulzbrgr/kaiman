@@ -127,6 +127,14 @@ export default function SchedulePage() {
     selectedImportedEvent.originalStart != null &&
     (selectedImportedEvent.start !== selectedImportedEvent.originalStart ||
       selectedImportedEvent.end !== selectedImportedEvent.originalEnd)
+  const importedPanelClassName = [
+    'schedule-main-lower',
+    !importedPanelCompact && !importedPanelCollapsed ? 'schedule-main-lower--expanded' : '',
+    importedPanelCompact ? 'schedule-main-lower--compact' : '',
+    importedPanelCollapsed ? 'schedule-main-lower--collapsed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   useEffect(() => {
     const missingBaseline = events.filter(
@@ -458,9 +466,7 @@ export default function SchedulePage() {
             onExternalDrop={handleExternalDrop}
           />
         </div>
-        <div
-          className={`schedule-main-lower${!importedPanelCompact && !importedPanelCollapsed ? ' schedule-main-lower--expanded' : ''}${importedPanelCompact ? ' schedule-main-lower--compact' : ''}${importedPanelCollapsed ? ' schedule-main-lower--collapsed' : ''}`}
-        >
+        <div className={importedPanelClassName}>
           <ImportedEventsPanel
             onSelect={(id) => {
               setSelectedImportedEventId(id)

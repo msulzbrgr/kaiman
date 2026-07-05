@@ -24,6 +24,10 @@ const DEFAULT_DURATION_MS = 90 * 60 * 1000
 const MIN_EVENT_DURATION_MINUTES = 15
 const MS_PER_MINUTE = 60_000
 
+function formatDuration(totalMinutes: number): string {
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`
+}
+
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
@@ -124,7 +128,7 @@ export default function ImportedEventsPanel({
                         ? new Date(e.end).getTime() - new Date(e.start).getTime()
                         : DEFAULT_DURATION_MS
                     const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
-                    const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
+                    const durationStr = formatDuration(durationMin)
                     const title =
                       e.type === 'game'
                         ? `Spiel${e.opponent ? ` vs ${e.opponent}` : ''}`
