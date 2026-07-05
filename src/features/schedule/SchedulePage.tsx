@@ -229,7 +229,7 @@ export default function SchedulePage() {
         const team = teamById.get(e.teamId)
         const detail =
           e.type === 'training'
-            ? e.art ? ` · ${e.art}` : ''
+            ? ''
             : e.opponent ? ` vs ${e.opponent}` : ''
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
         const trimmedRemarks = e.remarks?.trim() ?? ''
