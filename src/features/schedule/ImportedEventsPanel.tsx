@@ -4,6 +4,7 @@ import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
 import { fmtDate, fmtTime } from '../../lib/dateParse'
 import type { ScheduleEvent } from '../../db/types'
+import { EVENT_TYPE_LEGEND_ITEMS, getEventTypeIcon, getEventTypeLabel } from './eventTypePresentation'
 
 interface Props {
   onSelect: (id: number) => void
@@ -71,6 +72,14 @@ export default function ImportedEventsPanel({
       <div className="imported-panel-header">
         <span className="imported-panel-title">Importierter Spielplan</span>
         <span className="muted imported-panel-hint">Karte in den Kalender ziehen zum Verschieben</span>
+        <div className="event-type-legend" aria-label="Legende Event-Typen">
+          {EVENT_TYPE_LEGEND_ITEMS.map((item) => (
+            <span key={item.key} className="event-type-legend-item">
+              <span aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </span>
+          ))}
+        </div>
         <span className="spacer" />
         <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
         <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
@@ -101,10 +110,11 @@ export default function ImportedEventsPanel({
                       : DEFAULT_DURATION_MS
                   const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
-                  const title =
+                  const detail =
                     e.type === 'game'
-                      ? `Spiel${e.opponent ? ` vs ${e.opponent}` : ''}`
-                      : `Training${e.art ? ` · ${e.art}` : ''}`
+                      ? e.opponent ? ` vs ${e.opponent}` : ''
+                      : e.art ? ` ${e.art}` : ''
+                  const title = `${getEventTypeIcon(e)}${detail}`
                   const color = team?.color ?? '#2563eb'
 
                   return (
@@ -116,7 +126,7 @@ export default function ImportedEventsPanel({
                       data-title={title}
                       data-duration={durationStr}
                       onClick={() => onSelect(e.id!)}
-                      title="Ziehen zum Verschieben · Klicken zum Öffnen"
+                      title={`${getEventTypeLabel(e)} · Ziehen zum Verschieben · Klicken zum Öffnen`}
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
                       <span className="import-card-title">{title}</span>
