@@ -120,6 +120,7 @@ export default function ImportedEventsPanel({
                   const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
                   const detail = getImportedEventDetail(e)
                   const title = `${getEventTypeIcon(e)}${detail ? ` ${detail}` : ''}`
+                  const accessibleLabel = `${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}${team ? ` · ${team.name}` : ''}`
                   const color = team?.color ?? '#2563eb'
 
                   return (
@@ -135,7 +136,7 @@ export default function ImportedEventsPanel({
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
                       <span className="import-card-title">
-                        <span className="sr-only">{`${getEventTypeLabel(e)}${detail ? ` ${detail}` : ''}`}</span>
+                        <span className="sr-only">{accessibleLabel}</span>
                         <span aria-hidden="true">{title}</span>
                       </span>
                       {team && <span className="import-card-team">{team.name}</span>}
