@@ -482,10 +482,11 @@ export default function SchedulePage() {
             canUndo={undoStack.length > 0}
             canRedo={redoStack.length > 0}
             canResetSelected={canResetSelectedImportedEvent}
+            onDuplicate={(newId) => setOpenId(newId)}
           />
         </div>
       </div>
-      {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} />}
+      {openId != null && <EventDrawer eventId={openId} onClose={() => setOpenId(null)} onDuplicate={(newId) => setOpenId(newId)} />}
     </div>
   )
 }

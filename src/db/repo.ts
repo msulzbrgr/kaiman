@@ -76,7 +76,31 @@ export async function mergeTeams(sourceId: number, targetId: number): Promise<vo
   })
 }
 
-/** Merge sourcePerson into targetPerson across rosters and assignments. */
+/** Duplicate a schedule event (and its assignments) as a new manual entry. Returns the new event id. */
+export async function duplicateEvent(eventId: number): Promise<number> {
+  return db.transaction('rw', db.events, db.assignments, async () => {
+    const ev = await db.events.get(eventId)
+    if (!ev) throw new Error(`Event ${eventId} not found`)
+    const assignments = await db.assignments.where('eventId').equals(eventId).toArray()
+    const { id: _id, ...rest } = ev
+    const newId = await db.events.add({
+      ...rest,
+      sourceId: null,
+      sourceKey: 'manual-' + (ev.start ?? new Date().toISOString()),
+      originalStart: null,
+      originalEnd: null,
+      status: 'active',
+      manual: true,
+    })
+    if (assignments.length > 0) {
+      await db.assignments.bulkAdd(
+        assignments.map(({ id: _aid, ...a }) => ({ ...a, eventId: newId })),
+      )
+    }
+    return newId
+  })
+}
+
 export async function mergePeople(sourceId: number, targetId: number): Promise<void> {
   if (sourceId === targetId) return
   await db.transaction('rw', db.assignments, db.rosterMemberships, db.people, async () => {

@@ -365,6 +365,7 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   min-width: 130px;
   user-select: none;
   transition: box-shadow 0.15s;
+  position: relative;
 }
 
 .import-card:hover {
@@ -396,6 +397,40 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
 .import-card-team {
   font-size: 11px;
   color: var(--muted);
+}
+
+.import-card-actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.import-card:hover .import-card-actions,
+.import-card:focus-within .import-card-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.import-card-action-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.import-card-action-btn:hover {
+  background: #f1f5ff;
+  border-color: var(--accent);
 }
 
 /* Drawers go full-width on very small screens */
