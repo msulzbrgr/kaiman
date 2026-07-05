@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
@@ -9,6 +9,10 @@ import { EVENT_TYPE_LEGEND_ITEMS, getEventTypeIcon, getEventTypeLabel } from './
 interface Props {
   onSelect: (id: number) => void
   selectedId: number | null
+  isCompact: boolean
+  isCollapsed: boolean
+  onToggleCompact: () => void
+  onToggleCollapsed: () => void
   onUndo: () => void
   onRedo: () => void
   onResetSelected: () => void
@@ -20,6 +24,10 @@ interface Props {
 const DEFAULT_DURATION_MS = 90 * 60 * 1000
 const MIN_EVENT_DURATION_MINUTES = 15
 const MS_PER_MINUTE = 60_000
+
+function formatDuration(totalMinutes: number): string {
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`
+}
 
 function getImportedEventDetail(event: ScheduleEvent): string {
   if (event.type === 'game') {
@@ -36,6 +44,10 @@ function appendDetail(label: string, detail: string): string {
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
+  isCompact,
+  isCollapsed,
+  onToggleCompact,
+  onToggleCollapsed,
   onUndo,
   onRedo,
   onResetSelected,
@@ -43,7 +55,7 @@ export default function ImportedEventsPanel({
   canRedo,
   canResetSelected,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [dragContainer, setDragContainer] = useState<HTMLDivElement | null>(null)
 
   const events = useLiveQuery(
     () => db.events.filter((e) => e.sourceId !== null && e.start !== null).sortBy('start'),
@@ -52,20 +64,6 @@ export default function ImportedEventsPanel({
   )
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    const draggable = new Draggable(containerRef.current, {
-      itemSelector: '.import-card',
-      eventData: (el) => ({
-        id: el.dataset.id,
-        title: el.dataset.title,
-        duration: el.dataset.duration,
-        create: false,
-      }),
-    })
-    return () => draggable.destroy()
-  }, [])
 
   const grouped = useMemo(() => {
     if (!events?.length) return []
@@ -79,11 +77,24 @@ export default function ImportedEventsPanel({
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
   }, [events])
 
+  useEffect(() => {
+    if (!dragContainer || isCollapsed) return
+    const draggable = new Draggable(dragContainer, {
+      itemSelector: '.import-card',
+      eventData: (el) => ({
+        id: el.dataset.id,
+        title: el.dataset.title,
+        duration: el.dataset.duration,
+        create: false,
+      }),
+    })
+    return () => draggable.destroy()
+  }, [dragContainer, isCollapsed])
+
   return (
     <div className="imported-panel">
       <div className="imported-panel-header">
         <span className="imported-panel-title">Importierter Spielplan</span>
-        <span className="muted imported-panel-hint">Karte in den Kalender ziehen zum Verschieben</span>
         <div className="event-type-legend" aria-label="Legende Event-Typen">
           {EVENT_TYPE_LEGEND_ITEMS.map((item) => (
             <span key={item.key} className="event-type-legend-item">
@@ -93,6 +104,22 @@ export default function ImportedEventsPanel({
           ))}
         </div>
         <span className="spacer" />
+        <button
+          className="btn sm"
+          type="button"
+          aria-pressed={isCompact}
+          onClick={onToggleCompact}
+        >
+          {isCompact ? 'Erweitert' : 'Kompakt'}
+        </button>
+        <button
+          className="btn sm"
+          type="button"
+          aria-expanded={!isCollapsed}
+          onClick={onToggleCollapsed}
+        >
+          {isCollapsed ? 'Ausklappen' : 'Einklappen'}
+        </button>
         <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
         <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
         <button
@@ -104,50 +131,52 @@ export default function ImportedEventsPanel({
           Karte zurücksetzen
         </button>
       </div>
-      {grouped.length === 0 ? (
-        <p className="muted" style={{ padding: '0 14px', margin: '8px 0' }}>
-          Keine importierten Events vorhanden.
-        </p>
-      ) : (
-        <div className="imported-panel-body" ref={containerRef}>
-          {grouped.map(([day, evs]) => (
-            <div key={day} className="import-day-group">
-              <div className="import-day-label">{fmtDate(`${day}T12:00:00`)}</div>
-              <div className="import-day-events">
-                {evs.map((e) => {
-                  const team = teamById.get(e.teamId)
-                  const durationMs =
-                    e.start && e.end
-                      ? new Date(e.end).getTime() - new Date(e.start).getTime()
-                      : DEFAULT_DURATION_MS
-                  const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
-                  const durationStr = `${String(Math.floor(durationMin / 60)).padStart(2, '0')}:${String(durationMin % 60).padStart(2, '0')}`
-                  const detail = getImportedEventDetail(e)
-                  const title = appendDetail(getEventTypeIcon(e), detail)
-                  const accessibleLabel = `${appendDetail(getEventTypeLabel(e), detail)}${team ? ` · ${team.name}` : ''}`
-                  const color = team?.color ?? '#2563eb'
+      {isCollapsed ? null : (
+        <div className="imported-panel-body" ref={setDragContainer}>
+          {grouped.length === 0 ? (
+            <p className="muted imported-panel-empty-message">
+              Keine importierten Events vorhanden.
+            </p>
+          ) : (
+            grouped.map(([day, evs]) => (
+              <div key={day} className="import-day-group">
+                <div className="import-day-label">{fmtDate(`${day}T12:00:00`)}</div>
+                <div className="import-day-events">
+                  {evs.map((e) => {
+                    const team = teamById.get(e.teamId)
+                    const durationMs =
+                      e.start && e.end
+                        ? new Date(e.end).getTime() - new Date(e.start).getTime()
+                        : DEFAULT_DURATION_MS
+                    const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
+                    const durationStr = formatDuration(durationMin)
+                    const detail = getImportedEventDetail(e)
+                    const title = appendDetail(getEventTypeIcon(e), detail)
+                    const accessibleLabel = `${appendDetail(getEventTypeLabel(e), detail)}${team ? ` · ${team.name}` : ''}`
+                    const color = team?.color ?? '#2563eb'
 
-                  return (
-                    <div
-                      key={e.id}
-                      className={`import-card${e.status === 'cancelled' ? ' cancelled' : ''}${selectedId === e.id ? ' selected' : ''}`}
-                      style={{ borderLeftColor: color } as React.CSSProperties}
-                      data-id={String(e.id)}
-                      data-title={title}
-                      data-duration={durationStr}
-                      onClick={() => onSelect(e.id!)}
-                      title="Ziehen zum Verschieben · Klicken zum Öffnen"
-                    >
-                      <span className="import-card-time">{fmtTime(e.start!)}</span>
-                      <span className="sr-only">{accessibleLabel}</span>
-                      <span className="import-card-title" aria-hidden="true">{title}</span>
-                      {team && <span className="import-card-team">{team.name}</span>}
-                    </div>
-                  )
-                })}
+                    return (
+                      <div
+                        key={e.id}
+                        className={`import-card${e.status === 'cancelled' ? ' cancelled' : ''}${selectedId === e.id ? ' selected' : ''}`}
+                        style={{ borderLeftColor: color } as React.CSSProperties}
+                        data-id={String(e.id)}
+                        data-title={title}
+                        data-duration={durationStr}
+                        onClick={() => onSelect(e.id!)}
+                        title="Ziehen zum Verschieben · Klicken zum Öffnen"
+                      >
+                        <span className="import-card-time">{fmtTime(e.start!)}</span>
+                        <span className="sr-only">{accessibleLabel}</span>
+                        <span className="import-card-title" aria-hidden="true">{title}</span>
+                        {team && <span className="import-card-team">{team.name}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>

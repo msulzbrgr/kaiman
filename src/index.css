@@ -262,6 +262,15 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  transition: height 0.2s ease;
+}
+
+.schedule-main-lower--compact {
+  height: 132px;
+}
+
+.schedule-main-lower--collapsed {
+  height: 46px;
 }
 
 /* Imported events panel */
@@ -289,10 +298,6 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   color: var(--muted);
 }
 
-.imported-panel-hint {
-  font-size: 11px;
-}
-
 .event-type-legend {
   display: flex;
   align-items: center;
@@ -312,7 +317,6 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   font-size: 11px;
   white-space: nowrap;
 }
-
 .imported-panel-body {
   flex: 1;
   overflow-x: auto;
@@ -321,6 +325,10 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
   gap: 12px;
   padding: 8px 14px;
   align-items: flex-start;
+}
+
+.imported-panel-empty-message {
+  margin: 0;
 }
 
 .import-day-group {

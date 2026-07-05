@@ -115,6 +115,8 @@ export default function SchedulePage() {
   const [redoStack, setRedoStack] = useState<EventTimeChange[]>([])
   const [filterOpen, setFilterOpen] = useState(false)
   const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null)
+  const [importedPanelCompact, setImportedPanelCompact] = useState(false)
+  const [importedPanelCollapsed, setImportedPanelCollapsed] = useState(false)
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
   const eventById = useMemo(() => new Map(events.map((event) => [event.id!, event])), [events])
@@ -126,6 +128,14 @@ export default function SchedulePage() {
     selectedImportedEvent.originalStart != null &&
     (selectedImportedEvent.start !== selectedImportedEvent.originalStart ||
       selectedImportedEvent.end !== selectedImportedEvent.originalEnd)
+  const importedPanelClassName = [
+    'schedule-main-lower',
+    !importedPanelCompact && !importedPanelCollapsed ? 'schedule-main-lower--expanded' : '',
+    importedPanelCompact ? 'schedule-main-lower--compact' : '',
+    importedPanelCollapsed ? 'schedule-main-lower--collapsed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   useEffect(() => {
     const missingBaseline = events.filter(
@@ -455,13 +465,17 @@ export default function SchedulePage() {
             onExternalDrop={handleExternalDrop}
           />
         </div>
-        <div className="schedule-main-lower">
+        <div className={importedPanelClassName}>
           <ImportedEventsPanel
             onSelect={(id) => {
               setSelectedImportedEventId(id)
               setOpenId(id)
             }}
             selectedId={selectedImportedEventId}
+            isCompact={importedPanelCompact}
+            isCollapsed={importedPanelCollapsed}
+            onToggleCompact={() => setImportedPanelCompact((value) => !value)}
+            onToggleCollapsed={() => setImportedPanelCollapsed((value) => !value)}
             onUndo={undoMove}
             onRedo={redoMove}
             onResetSelected={resetSelectedImportedCard}
