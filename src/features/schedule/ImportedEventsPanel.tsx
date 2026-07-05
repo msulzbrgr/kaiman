@@ -136,7 +136,7 @@ export default function ImportedEventsPanel({
                       data-title={title}
                       data-duration={durationStr}
                       onClick={() => onSelect(e.id!)}
-                      title={`${getEventTypeLabel(e)} · Ziehen zum Verschieben · Klicken zum Öffnen`}
+                      title="Ziehen zum Verschieben · Klicken zum Öffnen"
                     >
                       <span className="import-card-time">{fmtTime(e.start!)}</span>
                       <span className="import-card-title">
