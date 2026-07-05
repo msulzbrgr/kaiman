@@ -4,7 +4,7 @@ import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
 import { duplicateEvent } from '../../db/repo'
 import { fmtDate, fmtTime } from '../../lib/dateParse'
-import type { ScheduleEvent } from '../../db/types'
+import type { ScheduleEvent, Team } from '../../db/types'
 import { EVENT_TYPE_LEGEND_ITEMS, getEventTypeIcon, getEventTypeLabel } from './eventTypePresentation'
 
 interface Props {
@@ -20,7 +20,11 @@ interface Props {
   canUndo: boolean
   canRedo: boolean
   canResetSelected: boolean
-  onDuplicate: (newId: number) => void
+  onDuplicate?: (newId: number) => void
+  eventsData?: ScheduleEvent[]
+  teamsData?: Team[]
+  visibleRange?: { start: Date; end: Date } | null
+  readOnly?: boolean
 }
 
 const DEFAULT_DURATION_MS = 90 * 60 * 1000
@@ -57,10 +61,15 @@ export default function ImportedEventsPanel({
   canRedo,
   canResetSelected,
   onDuplicate,
+  eventsData,
+  teamsData,
+  visibleRange,
+  readOnly = false,
 }: Props) {
   const [dragContainer, setDragContainer] = useState<HTMLDivElement | null>(null)
 
   async function handleDuplicate(eventId: number) {
+    if (!onDuplicate) return
     const newId = await duplicateEvent(eventId)
     onDuplicate(newId)
   }
@@ -71,22 +80,32 @@ export default function ImportedEventsPanel({
     [] as ScheduleEvent[],
   )
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
-  const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
+  const sourceEvents = eventsData ?? events
+  const sourceTeams = teamsData ?? teams
+  const teamById = useMemo(() => new Map(sourceTeams.map((t) => [t.id!, t])), [sourceTeams])
 
   const grouped = useMemo(() => {
-    if (!events?.length) return []
-    const map = new Map<string, typeof events>()
-    for (const e of events) {
+    if (!sourceEvents?.length) return []
+    const inRange = sourceEvents.filter((event) => {
+      if (!event.start) return false
+      if (event.sourceId === null) return false
+      if (!visibleRange) return true
+      const eventStart = new Date(event.start)
+      const eventEnd = new Date(event.end ?? event.start)
+      return eventEnd > visibleRange.start && eventStart < visibleRange.end
+    })
+    const map = new Map<string, typeof inRange>()
+    for (const e of inRange) {
       if (!e.start) continue
       const day = e.start.slice(0, 10)
       if (!map.has(day)) map.set(day, [])
       map.get(day)!.push(e)
     }
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [events])
+  }, [sourceEvents, visibleRange])
 
   useEffect(() => {
-    if (!dragContainer || isCollapsed) return
+    if (!dragContainer || isCollapsed || readOnly) return
     const draggable = new Draggable(dragContainer, {
       itemSelector: '.import-card',
       eventData: (el) => ({
@@ -97,7 +116,7 @@ export default function ImportedEventsPanel({
       }),
     })
     return () => draggable.destroy()
-  }, [dragContainer, isCollapsed])
+  }, [dragContainer, isCollapsed, readOnly])
 
   return (
     <div className="imported-panel">
@@ -112,12 +131,7 @@ export default function ImportedEventsPanel({
           ))}
         </div>
         <span className="spacer" />
-        <button
-          className="btn sm"
-          type="button"
-          aria-pressed={isCompact}
-          onClick={onToggleCompact}
-        >
+        <button className="btn sm" type="button" aria-pressed={isCompact} onClick={onToggleCompact}>
           {isCompact ? 'Erweitert' : 'Kompakt'}
         </button>
         <button
@@ -128,16 +142,20 @@ export default function ImportedEventsPanel({
         >
           {isCollapsed ? 'Ausklappen' : 'Einklappen'}
         </button>
-        <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
-        <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
-        <button
-          className="btn sm"
-          aria-label="Ausgewählte Karte auf Ursprungszeit zurücksetzen"
-          disabled={!canResetSelected}
-          onClick={onResetSelected}
-        >
-          Karte zurücksetzen
-        </button>
+        {!readOnly && (
+          <>
+            <button className="btn sm" aria-label="Zurücksetzen der letzten Verschiebung" disabled={!canUndo} onClick={onUndo}>↶ Zurück</button>
+            <button className="btn sm" aria-label="Wiederholen der letzten Verschiebung" disabled={!canRedo} onClick={onRedo}>↷ Wiederholen</button>
+            <button
+              className="btn sm"
+              aria-label="Ausgewählte Karte auf Ursprungszeit zurücksetzen"
+              disabled={!canResetSelected}
+              onClick={onResetSelected}
+            >
+              Karte zurücksetzen
+            </button>
+          </>
+        )}
       </div>
       {isCollapsed ? null : (
         <div className="imported-panel-body" ref={setDragContainer}>
@@ -178,15 +196,17 @@ export default function ImportedEventsPanel({
                         <span className="sr-only">{accessibleLabel}</span>
                         <span className="import-card-title" aria-hidden="true">{title}</span>
                         {team && <span className="import-card-team">{team.name}</span>}
-                        <div className="import-card-actions">
-                          <button
-                            type="button"
-                            className="import-card-action-btn"
-                            title="Duplizieren"
-                            aria-label="Duplizieren"
-                            onClick={(ev) => { ev.stopPropagation(); void handleDuplicate(e.id!) }}
-                          >⧉</button>
-                        </div>
+                        {!readOnly && onDuplicate && (
+                         <div className="import-card-actions">
+                           <button
+                             type="button"
+                             className="import-card-action-btn"
+                             title="Duplizieren"
+                             aria-label="Duplizieren"
+                             onClick={(ev) => { ev.stopPropagation(); void handleDuplicate(e.id!) }}
+                           >⧉</button>
+                         </div>
+                        )}
                       </div>
                     )
                   })}
