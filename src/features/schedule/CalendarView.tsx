@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { EventContentArg } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -11,6 +12,7 @@ export interface FcEvent {
   title: string
   start: string
   end?: string
+  remarks?: string
   color: string
   cancelled: boolean
 }
@@ -21,6 +23,32 @@ function getBreakpoint(w: number): Breakpoint {
   if (w < 640) return 'mobile'
   if (w < 1024) return 'tablet'
   return 'desktop'
+}
+
+function formatTimePart(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function formatEventTimeRange(start: Date | null, end: Date | null): string {
+  if (!start) return ''
+  return `${formatTimePart(start)} - ${formatTimePart(end ?? start)}`
+}
+
+function renderEventContent(arg: EventContentArg) {
+  const remarks =
+    typeof arg.event.extendedProps.remarks === 'string' && arg.event.extendedProps.remarks.trim().length > 0
+      ? arg.event.extendedProps.remarks.trim()
+      : null
+  const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
+  return (
+    <div className="schedule-calendar-event">
+      <div className="schedule-calendar-event-mainline">
+        {timeText && <span className="schedule-calendar-event-time">{timeText}</span>}
+        <span className="schedule-calendar-event-title">{arg.event.title}</span>
+      </div>
+      {remarks && <div className="schedule-calendar-event-remarks">{remarks}</div>}
+    </div>
+  )
 }
 
 export default function CalendarView({
@@ -76,6 +104,13 @@ export default function CalendarView({
         locale="de"
         height="100%"
         nowIndicator
+        displayEventEnd
+        eventDisplay="block"
+        eventTimeFormat={{
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }}
         headerToolbar={headerToolbar}
         buttonText={{
           today: 'Heute',
@@ -117,11 +152,13 @@ export default function CalendarView({
         datesSet={(arg) => {
           onVisibleRangeChange({ start: arg.start, end: arg.end })
         }}
+        eventContent={renderEventContent}
         events={events.map((e) => ({
           id: e.id,
           title: e.title,
           start: e.start,
           end: e.end,
+          remarks: e.remarks,
           backgroundColor: e.cancelled ? '#c2c6cd' : e.color,
           borderColor: e.cancelled ? '#c2c6cd' : e.color,
           classNames: e.cancelled ? ['cancelled'] : [],

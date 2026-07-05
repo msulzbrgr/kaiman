@@ -16,8 +16,6 @@ function shortTeamLabel(name: string): string {
 
 const SLOT_BUFFER_MINUTES = 60
 const MAX_TEAM_FILTER_REMARK_TEXT_LENGTH = 5
-const MAX_REMARK_PREVIEW_LENGTH = 5
-const MAX_REMARK_TITLE_LENGTH = 49
 interface EventTimeChange {
   eventId: number
   beforeStart: string | null
@@ -232,17 +230,13 @@ export default function SchedulePage() {
             ? ''
             : e.opponent ? ` vs ${e.opponent}` : ''
         const teamLabel = team ? shortTeamLabel(team.name) : '?'
-        const trimmedRemarks = e.remarks?.trim() ?? ''
-        const desc =
-          trimmedRemarks && trimmedRemarks.length <= MAX_REMARK_TITLE_LENGTH
-            ? ` · ${trimmedRemarks.slice(0, MAX_REMARK_PREVIEW_LENGTH)}`
-            : ''
-        const title = `${getEventTypeIcon(e)} ${teamLabel}${detail}${desc}`
+        const title = `${getEventTypeIcon(e)} ${teamLabel}${detail}`
         return {
           id: String(e.id),
           title: e.status === 'cancelled' ? `[Entfällt] ${title}` : title,
           start: e.start!,
           end: e.end ?? undefined,
+          remarks: getNonEmptyRemarks(e.remarks) ?? undefined,
           color: team?.color ?? '#2563eb',
           cancelled: e.status === 'cancelled',
         }
