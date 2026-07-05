@@ -108,7 +108,7 @@ export default function ImportedEventsPanel({
       {isCollapsed ? null : (
         <div className="imported-panel-body" ref={containerRef}>
           {grouped.length === 0 ? (
-            <p className="muted" style={{ margin: 0 }}>
+            <p className="muted imported-panel-empty-message">
               Keine importierten Events vorhanden.
             </p>
           ) : (
