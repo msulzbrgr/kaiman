@@ -14,8 +14,9 @@ runs:
     - name: Normalize branch name
       id: normalize
       shell: bash
+      env:
+        BRANCH_NAME: ${{ inputs.branch-name }}
       run: |
-        BRANCH_NAME="${{ inputs.branch-name }}"
         # lower-case -> replace non URL chars with "-" -> trim leading/trailing "-"
         BRANCH_SLUG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's|[^a-z0-9._-]+|-|g' | sed -E 's/^-+|-+$//g')
         echo "path=test/${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
