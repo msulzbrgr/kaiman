@@ -35,8 +35,8 @@ function formatEventTimeRange(start: Date | null, end: Date | null): string {
 }
 
 function renderEventContent(arg: EventContentArg) {
-  const rawRemarks = typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks : null
-  const trimmedRemarks = rawRemarks?.trim() ?? ''
+  const trimmedRemarks =
+    typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks.trim() : ''
   const remarks = trimmedRemarks.length > 0 ? trimmedRemarks : null
   const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
   return (
@@ -103,13 +103,7 @@ export default function CalendarView({
         locale="de"
         height="100%"
         nowIndicator
-        displayEventEnd
         eventDisplay="block"
-        eventTimeFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }}
         headerToolbar={headerToolbar}
         buttonText={{
           today: 'Heute',
