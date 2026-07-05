@@ -180,7 +180,7 @@ export default function CalendarView({
           onVisibleRangeChange({ start: arg.start, end: arg.end })
           onViewStateChange?.({
             viewType: arg.view.type,
-            anchorDate: arg.startStr,
+            anchorDate: arg.view.currentStart.toISOString(),
           })
         }}
         eventContent={renderEventContent}
