@@ -71,10 +71,11 @@ test('import MIH schedule: full workflow – import, preview, commit, schedule, 
 
   // Navigate forward month-by-month until we reach August 2026 where the
   // bulk of the events live (13 events in Aug, 15 in Sep, 1 in Nov).
-  const months = monthsUntilAugust2026()
-  for (let i = 0; i < months; i++) {
-    await page.locator('button.fc-next-button').click()
-  }
+const months = monthsDeltaToAugust2026()
+const navButton = months >= 0 ? 'button.fc-next-button' : 'button.fc-prev-button'
+for (let i = 0; i < Math.abs(months); i++) {
+  await page.locator(navButton).click()
+}
   // The month grid should render event pills for August 2026.
   await expect(page.locator('.fc-daygrid-event')).not.toHaveCount(0)
 
