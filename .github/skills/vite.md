@@ -34,7 +34,7 @@ Keep `base: './'` — it makes all asset paths relative so the `dist/` folder ca
 
 ## TypeScript integration
 
-Vite calls the TypeScript compiler for type-checking only during `build` (`tsc -b`). In dev mode, Vite transpiles with esbuild (fast, no type-checking). Always run `npm run build` before merging to confirm there are no type errors.
+Type-checking runs as part of `npm run build` (`tsc -b` before `vite build`). In dev mode, Vite transpiles with esbuild (fast, no type-checking). Always run `npm run build` before merging to confirm there are no type errors.
 
 Two tsconfig files:
 
