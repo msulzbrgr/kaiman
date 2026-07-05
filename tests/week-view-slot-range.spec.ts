@@ -114,6 +114,32 @@ test('team filters include short remarks only and filter matching events', async
   await expect(page.locator('.fc-timegrid-event')).toHaveCount(1)
 })
 
+test('calendar events show time range and remarks in week, 2-week, and month views', async ({ page }) => {
+  const monday = mondayOfCurrentWeek()
+
+  const start = new Date(monday)
+  start.setDate(monday.getDate() + 1)
+  start.setHours(10, 0, 0, 0)
+  const end = new Date(start)
+  end.setHours(11, 0, 0, 0)
+
+  await page.goto('/')
+  await createTeam(page, 'EHC Zuchwil Regio U12')
+  await createEvent(page, start, end, 'Treffpunkt 09:30')
+
+  await page.locator('button.fc-timeGridWeek-button').click()
+  await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
+  await expect(page.locator('.fc-timegrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+
+  await page.locator('button.fc-twoWeek-button').click()
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+
+  await page.locator('button.fc-dayGridMonth-button').click()
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-time').first()).toHaveText('10:00 - 11:00')
+  await expect(page.locator('.fc-daygrid-event .schedule-calendar-event-remarks').first()).toHaveText('Treffpunkt 09:30')
+})
+
 test('imported panel can be shrunk or collapsed and no longer shows the wrong drag hint', async ({ page }) => {
   await page.goto('/')
 

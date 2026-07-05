@@ -134,6 +134,45 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
 
 .fc { background: var(--panel); border-radius: 10px; padding: 8px; }
 .fc-event { cursor: pointer; }
+.fc-event .fc-event-main { white-space: normal; }
+
+.schedule-calendar-event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.schedule-calendar-event-mainline {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.schedule-calendar-event-time {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.schedule-calendar-event-title,
+.schedule-calendar-event-remarks {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-calendar-event-title {
+  font-weight: 500;
+}
+
+.schedule-calendar-event-remarks {
+  font-size: 11px;
+  opacity: 0.9;
+}
 
 /* Table scroll wrapper (mobile) */
 .table-scroll-wrap {
