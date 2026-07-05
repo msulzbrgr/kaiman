@@ -2,9 +2,11 @@
 name: Deploy to GitHub Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
+  # Runs after E2E tests pass on the default branch
+  workflow_run:
+    workflows: ["E2E Tests"]
     branches: ["main"]
+    types: [completed]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -23,6 +25,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
