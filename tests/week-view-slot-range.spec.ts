@@ -115,6 +115,7 @@ test('team filters include short remarks only and filter matching events', async
 })
 
 test('calendar events show time range and only short remarks in week, 2-week, and month views', async ({ page }) => {
+  const maxVisibleRemarkLength = 20
   const monday = mondayOfCurrentWeek()
 
   const shortStart = new Date(monday)
@@ -128,7 +129,7 @@ test('calendar events show time range and only short remarks in week, 2-week, an
   const longEnd = new Date(longStart)
   longEnd.setHours(11, 0, 0, 0)
   const shortRemark = 'Treffpunkt 09:30'
-  const longRemark = '123456789012345678901'
+  const longRemark = 'Treffpunkt Parkplatz Haupteingang'
 
   await page.goto('/')
   await createTeam(page, 'EHC Zuchwil Regio U12')
