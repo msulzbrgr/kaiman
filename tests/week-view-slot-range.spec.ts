@@ -128,8 +128,8 @@ test('calendar events show time range and only short remarks in week, 2-week, an
   longStart.setHours(10, 0, 0, 0)
   const longEnd = new Date(longStart)
   longEnd.setHours(11, 0, 0, 0)
-  const shortRemark = 'Treffpunkt 09:30'
-  const longRemark = 'Treffpunkt Parkplatz Haupteingang'
+  const shortRemark = 'x'.repeat(maxVisibleRemarkLength)
+  const longRemark = 'x'.repeat(maxVisibleRemarkLength + 1)
 
   await page.goto('/')
   await createTeam(page, 'EHC Zuchwil Regio U12')
