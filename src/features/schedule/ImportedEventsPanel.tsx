@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
@@ -8,7 +8,8 @@ import type { ScheduleEvent } from '../../db/types'
 interface Props {
   onSelect: (id: number) => void
   selectedId: number | null
-  viewMode: 'expanded' | 'compact' | 'collapsed'
+  isCompact: boolean
+  isCollapsed: boolean
   onToggleCompact: () => void
   onToggleCollapsed: () => void
   onUndo: () => void
@@ -26,7 +27,8 @@ const MS_PER_MINUTE = 60_000
 export default function ImportedEventsPanel({
   onSelect,
   selectedId,
-  viewMode,
+  isCompact,
+  isCollapsed,
   onToggleCompact,
   onToggleCollapsed,
   onUndo,
@@ -36,8 +38,7 @@ export default function ImportedEventsPanel({
   canRedo,
   canResetSelected,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const isCollapsed = viewMode === 'collapsed'
+  const [dragContainer, setDragContainer] = useState<HTMLDivElement | null>(null)
 
   const events = useLiveQuery(
     () => db.events.filter((e) => e.sourceId !== null && e.start !== null).sortBy('start'),
@@ -60,8 +61,8 @@ export default function ImportedEventsPanel({
   }, [events])
 
   useEffect(() => {
-    if (!containerRef.current || isCollapsed) return
-    const draggable = new Draggable(containerRef.current, {
+    if (!dragContainer || isCollapsed) return
+    const draggable = new Draggable(dragContainer, {
       itemSelector: '.import-card',
       eventData: (el) => ({
         id: el.dataset.id,
@@ -71,7 +72,7 @@ export default function ImportedEventsPanel({
       }),
     })
     return () => draggable.destroy()
-  }, [isCollapsed])
+  }, [dragContainer, isCollapsed])
 
   return (
     <div className="imported-panel">
@@ -81,10 +82,10 @@ export default function ImportedEventsPanel({
         <button
           className="btn sm"
           type="button"
-          aria-pressed={viewMode === 'compact'}
+          aria-pressed={isCompact}
           onClick={onToggleCompact}
         >
-          {viewMode === 'compact' ? 'Erweitert' : 'Kompakt'}
+          {isCompact ? 'Erweitert' : 'Kompakt'}
         </button>
         <button
           className="btn sm"
@@ -106,7 +107,7 @@ export default function ImportedEventsPanel({
         </button>
       </div>
       {isCollapsed ? null : (
-        <div className="imported-panel-body" ref={containerRef}>
+        <div className="imported-panel-body" ref={setDragContainer}>
           {grouped.length === 0 ? (
             <p className="muted imported-panel-empty-message">
               Keine importierten Events vorhanden.

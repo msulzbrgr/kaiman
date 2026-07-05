@@ -129,5 +129,8 @@ test('imported panel can be shrunk or collapsed and no longer shows the wrong dr
   await expect(panel).toHaveClass(/schedule-main-lower--collapsed/)
 
   await page.getByRole('button', { name: 'Ausklappen' }).click()
+  await expect(panel).toHaveClass(/schedule-main-lower--compact/)
+
+  await page.getByRole('button', { name: 'Erweitert' }).click()
   await expect(panel).toHaveClass(/schedule-main-lower--expanded/)
 })
