@@ -44,6 +44,7 @@ input, select, textarea { font: inherit; }
 
 /* Schedule layout */
 .schedule { display: flex; height: 100%; min-height: 0; }
+.schedule--split { flex-direction: column; overflow: hidden; }
 .filter-rail {
   width: 250px; flex-shrink: 0; background: var(--panel);
   border-right: 1px solid var(--border); padding: 14px; overflow: auto;
@@ -383,6 +384,12 @@ table.grid th { background: #f1f3f7; font-size: 12px; text-transform: uppercase;
 
 .schedule-split-pane--left {
   border-right: 1px solid var(--border);
+}
+
+.schedule-split-pane--right {
+  --bg: #eef1f8;
+  --panel: #f4f7fb;
+  background: #eef1f8;
 }
 
 .schedule-main-lower {
