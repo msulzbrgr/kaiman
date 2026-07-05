@@ -44,6 +44,7 @@ export default function ImportedEventsPanel({
     [],
     [] as ScheduleEvent[],
   )
+  const importedEventCount = events?.length ?? 0
   const teams = useLiveQuery(() => db.teams.toArray(), [], [])
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id!, t])), [teams])
 
@@ -71,7 +72,7 @@ export default function ImportedEventsPanel({
       }),
     })
     return () => draggable.destroy()
-  }, [grouped.length, isCollapsed])
+  }, [importedEventCount, isCollapsed])
 
   return (
     <div className="imported-panel">
@@ -84,7 +85,7 @@ export default function ImportedEventsPanel({
           aria-pressed={viewMode === 'compact'}
           onClick={onToggleCompact}
         >
-          {viewMode === 'compact' ? 'Normal' : 'Kompakt'}
+          {viewMode === 'compact' ? 'Erweitert' : 'Kompakt'}
         </button>
         <button
           className="btn sm"
