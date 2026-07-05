@@ -121,7 +121,7 @@ export default function CalendarView({
     const api = calendarRef.current?.getApi()
     if (!api) return
     const currentView = api.view.type
-    const currentDate = api.getDate().toISOString().slice(0, 10)
+    const currentDate = api.view.currentStart.toISOString().slice(0, 10)
     const nextDate = syncTarget.anchorDate.slice(0, 10)
     if (currentView === syncTarget.viewType && currentDate === nextDate) return
     api.changeView(syncTarget.viewType, syncTarget.anchorDate)
