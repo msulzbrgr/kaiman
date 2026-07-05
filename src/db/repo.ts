@@ -86,9 +86,10 @@ export async function duplicateEvent(eventId: number): Promise<number> {
     const newId = await db.events.add({
       ...rest,
       sourceId: null,
-      sourceKey: 'manual-' + new Date().toISOString(),
+      sourceKey: 'manual-' + (ev.start ?? new Date().toISOString()),
       originalStart: null,
       originalEnd: null,
+      status: 'active',
       manual: true,
     })
     if (assignments.length > 0) {
