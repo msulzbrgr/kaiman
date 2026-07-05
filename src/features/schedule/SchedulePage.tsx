@@ -5,6 +5,7 @@ import FilterRail, { type TeamFilterOption } from './FilterRail'
 import CalendarView, { type FcEvent } from './CalendarView'
 import EventDrawer from './EventDrawer'
 import ImportedEventsPanel from './ImportedEventsPanel'
+import { getEventTypeIcon } from './eventTypePresentation'
 
 // Drop the club prefix from the team name for compact agenda titles:
 // "EHC Zuchwil Regio U9"/"…U12" -> "U9"/"U12"; anything else -> "U14".
@@ -226,7 +227,6 @@ export default function SchedulePage() {
       })
       .map((e) => {
         const team = teamById.get(e.teamId)
-        const typeLabel = e.type === 'game' ? (e.home ? 'Spiel' : 'Spiel (A)') : 'Training'
         const detail =
           e.type === 'training'
             ? e.art ? ` · ${e.art}` : ''
@@ -237,8 +237,7 @@ export default function SchedulePage() {
           trimmedRemarks && trimmedRemarks.length <= MAX_REMARK_TITLE_LENGTH
             ? ` · ${trimmedRemarks.slice(0, MAX_REMARK_PREVIEW_LENGTH)}`
             : ''
-        const prefix = e.type === 'training' ? '' : `${typeLabel} · `
-        const title = `${prefix}${teamLabel}${detail}${desc}`
+        const title = `${getEventTypeIcon(e)} ${teamLabel}${detail}${desc}`
         return {
           id: String(e.id),
           title: e.status === 'cancelled' ? `[Entfällt] ${title}` : title,

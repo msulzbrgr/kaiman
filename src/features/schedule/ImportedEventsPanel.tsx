@@ -4,6 +4,7 @@ import { Draggable } from '@fullcalendar/interaction'
 import { db } from '../../db/db'
 import { fmtDate, fmtTime } from '../../lib/dateParse'
 import type { ScheduleEvent } from '../../db/types'
+import { EVENT_TYPE_LEGEND_ITEMS, getEventTypeIcon, getEventTypeLabel } from './eventTypePresentation'
 
 interface Props {
   onSelect: (id: number) => void
@@ -26,6 +27,18 @@ const MS_PER_MINUTE = 60_000
 
 function formatDuration(totalMinutes: number): string {
   return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`
+}
+
+function getImportedEventDetail(event: ScheduleEvent): string {
+  if (event.type === 'game') {
+    return event.opponent ? `vs ${event.opponent}` : ''
+  }
+
+  return event.art ?? ''
+}
+
+function appendDetail(label: string, detail: string): string {
+  return detail ? `${label} ${detail}` : label
 }
 
 export default function ImportedEventsPanel({
@@ -82,6 +95,14 @@ export default function ImportedEventsPanel({
     <div className="imported-panel">
       <div className="imported-panel-header">
         <span className="imported-panel-title">Importierter Spielplan</span>
+        <div className="event-type-legend" aria-label="Legende Event-Typen">
+          {EVENT_TYPE_LEGEND_ITEMS.map((item) => (
+            <span key={item.key} className="event-type-legend-item">
+              <span aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </span>
+          ))}
+        </div>
         <span className="spacer" />
         <button
           className="btn sm"
@@ -129,10 +150,9 @@ export default function ImportedEventsPanel({
                         : DEFAULT_DURATION_MS
                     const durationMin = Math.max(MIN_EVENT_DURATION_MINUTES, Math.round(durationMs / MS_PER_MINUTE))
                     const durationStr = formatDuration(durationMin)
-                    const title =
-                      e.type === 'game'
-                        ? `Spiel${e.opponent ? ` vs ${e.opponent}` : ''}`
-                        : `Training${e.art ? ` · ${e.art}` : ''}`
+                    const detail = getImportedEventDetail(e)
+                    const title = appendDetail(getEventTypeIcon(e), detail)
+                    const accessibleLabel = `${appendDetail(getEventTypeLabel(e), detail)}${team ? ` · ${team.name}` : ''}`
                     const color = team?.color ?? '#2563eb'
 
                     return (
@@ -147,7 +167,8 @@ export default function ImportedEventsPanel({
                         title="Ziehen zum Verschieben · Klicken zum Öffnen"
                       >
                         <span className="import-card-time">{fmtTime(e.start!)}</span>
-                        <span className="import-card-title">{title}</span>
+                        <span className="sr-only">{accessibleLabel}</span>
+                        <span className="import-card-title" aria-hidden="true">{title}</span>
                         {team && <span className="import-card-team">{team.name}</span>}
                       </div>
                     )
