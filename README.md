@@ -31,8 +31,14 @@ deployt. Der Workflow installiert die Abhängigkeiten, baut `dist/` und veröffe
 dieses Verzeichnis.
 
 Für die Veröffentlichung im Repository einmalig in GitHub **Settings → Pages** als Source
-**GitHub Actions** auswählen. Danach wird jeder Push auf `main` automatisch veröffentlicht;
-zusätzlich kann der Workflow manuell über den Actions-Tab gestartet werden.
+**Deploy from a branch** mit Branch **`gh-pages`** und Folder **`/ (root)`** auswählen.
+
+- Push auf `main` veröffentlicht die Produktivversion unter
+  `https://msulzbrgr.github.io/kaiman/`.
+- Pull Requests aus Branches dieses Repositories werden zusätzlich als Preview unter
+  `https://msulzbrgr.github.io/kaiman/test/<branch-name>/` veröffentlicht
+  (`<branch-name>` wird URL-tauglich normalisiert).
+- Der Workflow kann weiterhin manuell über den Actions-Tab gestartet werden.
 
 ## Funktionen
 
