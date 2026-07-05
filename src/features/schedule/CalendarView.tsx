@@ -72,7 +72,7 @@ function renderEventContent(arg: EventContentArg) {
 
   const infoParts: string[] = []
   if (coachCount !== undefined && coachCount > 0)
-    infoParts.push(`${coachCount} Coach${coachCount !== 1 ? 's' : ''}`)
+    infoParts.push(`${coachCount} Coach${coachCount !== 1 ? 'es' : ''}`)
   if (playerCount !== undefined && playerCount > 0) infoParts.push(`${playerCount} Spieler`)
 
   return (
