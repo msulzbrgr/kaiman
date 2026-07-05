@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/db'
+import { getNonEmptyText } from '../../lib/text'
 import FilterRail, { type TeamFilterOption } from './FilterRail'
 import CalendarView, { type FcEvent } from './CalendarView'
 import EventDrawer from './EventDrawer'
@@ -50,15 +51,10 @@ type TeamFilterVariant = {
   getLabel: (teamName: string, value: string) => string
 }
 
-function getNonEmptyRemarks(remarks: string): string | null {
-  const trimmed = remarks.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
-
 const TEAM_FILTER_VARIANTS: TeamFilterVariant[] = [
   {
     id: 'remarks',
-    getValue: (event) => getNonEmptyRemarks(event.remarks),
+    getValue: (event) => getNonEmptyText(event.remarks),
     isEnabled: (value) => value.length <= MAX_TEAM_FILTER_REMARK_TEXT_LENGTH,
     getLabel: (teamName, value) => `${teamName} · ${value}`,
   },
@@ -236,7 +232,7 @@ export default function SchedulePage() {
           title: e.status === 'cancelled' ? `[Entfällt] ${title}` : title,
           start: e.start!,
           end: e.end ?? undefined,
-          remarks: getNonEmptyRemarks(e.remarks) ?? undefined,
+          remarks: getNonEmptyText(e.remarks) ?? undefined,
           color: team?.color ?? '#2563eb',
           cancelled: e.status === 'cancelled',
         }

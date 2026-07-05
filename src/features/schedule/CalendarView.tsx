@@ -6,6 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list'
 import multiMonthPlugin from '@fullcalendar/multimonth'
 import interactionPlugin from '@fullcalendar/interaction'
+import { getNonEmptyText } from '../../lib/text'
 
 export interface FcEvent {
   id: string
@@ -31,13 +32,14 @@ function formatTimePart(date: Date): string {
 
 function formatEventTimeRange(start: Date | null, end: Date | null): string {
   if (!start) return ''
-  return `${formatTimePart(start)} - ${formatTimePart(end ?? start)}`
+  if (!end) return formatTimePart(start)
+  return `${formatTimePart(start)} - ${formatTimePart(end)}`
 }
 
 function renderEventContent(arg: EventContentArg) {
-  const trimmedRemarks =
-    typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks.trim() : ''
-  const remarks = trimmedRemarks.length > 0 ? trimmedRemarks : null
+  const remarks = getNonEmptyText(
+    typeof arg.event.extendedProps.remarks === 'string' ? arg.event.extendedProps.remarks : null,
+  )
   const timeText = formatEventTimeRange(arg.event.start, arg.event.end)
   return (
     <div className="schedule-calendar-event">
