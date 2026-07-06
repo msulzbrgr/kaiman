@@ -9,6 +9,7 @@ import CalendarView, { type CalendarSyncTarget, type FcEvent } from './CalendarV
 import EventDrawer from './EventDrawer'
 import ImportedEventsPanel from './ImportedEventsPanel'
 import { getEventTypeIcon } from './eventTypePresentation'
+import { SPLIT_TOOLBAR_COLLAPSE_LABEL, SPLIT_TOOLBAR_EXPAND_LABEL } from './splitToolbarLabels'
 
 // Drop the club prefix from the team name for compact agenda titles:
 // "EHC Zuchwil Regio U9"/"…U12" -> "U9"/"U12"; anything else -> "U14".
@@ -364,6 +365,7 @@ export default function SchedulePage() {
   const [rightImportedPanelCollapsed, setRightImportedPanelCollapsed] = useState(false)
   const [leftFilterCollapsed, setLeftFilterCollapsed] = useState(false)
   const [rightFilterCollapsed, setRightFilterCollapsed] = useState(false)
+  const [splitToolbarCollapsed, setSplitToolbarCollapsed] = useState(false)
 
   const [splitOpen, setSplitOpen] = useState(false)
   const [splitSnapshots, setSplitSnapshots] = useState<SplitSnapshot[]>([])
@@ -888,28 +890,65 @@ export default function SchedulePage() {
     <div className={`schedule${splitOpen ? ' schedule--split' : ''}`}>
       {splitOpen ? (
         <>
-          <div className="schedule-split-toolbar">
-            <button className="btn sm" onClick={() => setSplitOpen(false)}>Split-View schließen</button>
-            <button className="btn sm" onClick={() => void saveSplitSnapshot()}>Stand speichern</button>
-            <label className="schedule-split-select-wrap">
-              <span className="muted">Stand:</span>
-              <select
-                className="schedule-split-select"
-                value={selectedSplitSnapshotId ?? ''}
-                onChange={(event) => {
-                  setSelectedSplitSnapshotId(event.target.value)
-                  setSplitDiffSummary(null)
-                }}
+          <div className={`schedule-split-toolbar${splitToolbarCollapsed ? ' schedule-split-toolbar--collapsed' : ''}`}>
+            <div className="schedule-split-toolbar-header">
+              <div className="schedule-split-toolbar-title-group">
+                <span className="schedule-split-toolbar-title">Split-View</span>
+                {splitDiffSummary && <span className="muted">{splitDiffSummary}</span>}
+              </div>
+              <button
+                className="btn sm"
+                type="button"
+                aria-expanded={!splitToolbarCollapsed}
+                aria-label={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
+                title={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
+                onClick={() => setSplitToolbarCollapsed((value) => !value)}
               >
-                {splitSnapshots.map((snapshot) => (
-                  <option key={snapshot.id} value={snapshot.id}>{snapshot.label}</option>
-                ))}
-              </select>
-            </label>
-            <button className="btn sm" onClick={diffSelectedSnapshotAgainstCurrent}>Differenz</button>
-            <button className="btn sm" onClick={exportSelectedSnapshot}>Export</button>
-            <button className="btn sm danger" onClick={deleteSelectedSnapshot}>Löschen</button>
-            {splitDiffSummary && <span className="muted">{splitDiffSummary}</span>}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 12 12"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {splitToolbarCollapsed ? (
+                    <path d="M4 2.5 7.5 6 4 9.5" />
+                  ) : (
+                    <path d="M2.5 4 6 7.5 9.5 4" />
+                  )}
+                </svg>
+              </button>
+            </div>
+            {!splitToolbarCollapsed && (
+              <div className="schedule-split-toolbar-actions">
+                <button className="btn sm" onClick={() => setSplitOpen(false)}>Split-View schließen</button>
+                <button className="btn sm schedule-split-save-button" onClick={() => void saveSplitSnapshot()}>
+                  Stand speichern
+                </button>
+                <label className="schedule-split-select-wrap">
+                  <span className="muted">Stand:</span>
+                  <select
+                    className="schedule-split-select"
+                    value={selectedSplitSnapshotId ?? ''}
+                    onChange={(event) => {
+                      setSelectedSplitSnapshotId(event.target.value)
+                      setSplitDiffSummary(null)
+                    }}
+                  >
+                    {splitSnapshots.map((snapshot) => (
+                      <option key={snapshot.id} value={snapshot.id}>{snapshot.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="btn sm" onClick={diffSelectedSnapshotAgainstCurrent}>Differenz</button>
+                <button className="btn sm" onClick={exportSelectedSnapshot}>Export</button>
+                <button className="btn sm danger" onClick={deleteSelectedSnapshot}>Löschen</button>
+              </div>
+            )}
           </div>
           <div className="schedule-split-body">
             <div className="schedule-split-pane schedule-split-pane--left">{leftPane}</div>

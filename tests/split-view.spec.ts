@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import { SPLIT_TOOLBAR_COLLAPSE_LABEL, SPLIT_TOOLBAR_EXPAND_LABEL } from '../src/features/schedule/splitToolbarLabels'
 
 const FIXTURE_FILE = fileURLToPath(new URL('fixtures/MIH_test_schedule.xls', import.meta.url))
 
@@ -30,6 +31,12 @@ test('split view keeps ranges synced and manages saved states', async ({ page })
 
   await expect(page.locator('.schedule-split-toolbar')).toBeVisible()
   await expect(page.locator('.schedule-split-pane')).toHaveCount(2)
+  const toolbarToggle = page.locator(`button[aria-label="${SPLIT_TOOLBAR_COLLAPSE_LABEL}"]`)
+  const saveButton = page.locator('.schedule-split-save-button')
+  await toolbarToggle.click()
+  await expect(saveButton).toBeHidden()
+  await page.locator(`button[aria-label="${SPLIT_TOOLBAR_EXPAND_LABEL}"]`).click()
+  await expect(saveButton).toBeVisible()
 
   const leftPane = page.locator('.schedule-split-pane--left')
   const rightPane = page.locator('.schedule-split-pane--right')
@@ -56,7 +63,7 @@ test('split view keeps ranges synced and manages saved states', async ({ page })
   const stateSelect = page.locator('.schedule-split-select')
   await expect(stateSelect.locator('option')).toHaveCount(1)
 
-  await page.getByRole('button', { name: 'Stand speichern' }).click()
+  await saveButton.click()
   await expect(stateSelect.locator('option')).toHaveCount(2)
 
   await page.getByRole('button', { name: 'Differenz' }).click()
