@@ -904,10 +904,23 @@ export default function SchedulePage() {
                 title={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
                 onClick={() => setSplitToolbarCollapsed((value) => !value)}
               >
-                <span aria-hidden="true">{splitToolbarCollapsed ? '▸' : '▾'}</span>
-                <span className="sr-only">
-                  {splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
-                </span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 12 12"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {splitToolbarCollapsed ? (
+                    <path d="M4 2.5 7.5 6 4 9.5" />
+                  ) : (
+                    <path d="M2.5 4 6 7.5 9.5 4" />
+                  )}
+                </svg>
               </button>
             </div>
             {!splitToolbarCollapsed && (
