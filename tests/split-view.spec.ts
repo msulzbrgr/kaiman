@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import { SPLIT_TOOLBAR_COLLAPSE_LABEL, SPLIT_TOOLBAR_EXPAND_LABEL } from '../src/features/schedule/splitToolbarLabels'
 
 const FIXTURE_FILE = fileURLToPath(new URL('fixtures/MIH_test_schedule.xls', import.meta.url))
 
@@ -30,10 +31,10 @@ test('split view keeps ranges synced and manages saved states', async ({ page })
 
   await expect(page.locator('.schedule-split-toolbar')).toBeVisible()
   await expect(page.locator('.schedule-split-pane')).toHaveCount(2)
-  const toolbarToggle = page.locator('button[aria-label="Split-View-Steuerung einklappen"]')
+  const toolbarToggle = page.locator(`button[aria-label="${SPLIT_TOOLBAR_COLLAPSE_LABEL}"]`)
   await toolbarToggle.click()
   await expect(page.getByRole('button', { name: 'Stand speichern' })).toBeHidden()
-  await page.locator('button[aria-label="Split-View-Steuerung ausklappen"]').click()
+  await page.locator(`button[aria-label="${SPLIT_TOOLBAR_EXPAND_LABEL}"]`).click()
   await expect(page.getByRole('button', { name: 'Stand speichern' })).toBeVisible()
 
   const leftPane = page.locator('.schedule-split-pane--left')

@@ -9,6 +9,7 @@ import CalendarView, { type CalendarSyncTarget, type FcEvent } from './CalendarV
 import EventDrawer from './EventDrawer'
 import ImportedEventsPanel from './ImportedEventsPanel'
 import { getEventTypeIcon } from './eventTypePresentation'
+import { SPLIT_TOOLBAR_COLLAPSE_LABEL, SPLIT_TOOLBAR_EXPAND_LABEL } from './splitToolbarLabels'
 
 // Drop the club prefix from the team name for compact agenda titles:
 // "EHC Zuchwil Regio U9"/"…U12" -> "U9"/"U12"; anything else -> "U14".
@@ -899,7 +900,7 @@ export default function SchedulePage() {
                 className="btn sm"
                 type="button"
                 aria-expanded={!splitToolbarCollapsed}
-                aria-label={splitToolbarCollapsed ? 'Split-View-Steuerung ausklappen' : 'Split-View-Steuerung einklappen'}
+                aria-label={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
                 onClick={() => setSplitToolbarCollapsed((value) => !value)}
               >
                 {splitToolbarCollapsed ? '▸' : '▾'}
