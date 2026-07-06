@@ -30,6 +30,11 @@ test('split view keeps ranges synced and manages saved states', async ({ page })
 
   await expect(page.locator('.schedule-split-toolbar')).toBeVisible()
   await expect(page.locator('.schedule-split-pane')).toHaveCount(2)
+  const toolbarToggle = page.getByRole('button', { name: 'Split-View-Steuerung einklappen' })
+  await toolbarToggle.click()
+  await expect(page.getByRole('button', { name: 'Stand speichern' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Split-View-Steuerung ausklappen' }).click()
+  await expect(page.getByRole('button', { name: 'Stand speichern' })).toBeVisible()
 
   const leftPane = page.locator('.schedule-split-pane--left')
   const rightPane = page.locator('.schedule-split-pane--right')
