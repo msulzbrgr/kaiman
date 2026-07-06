@@ -901,15 +901,21 @@ export default function SchedulePage() {
                 type="button"
                 aria-expanded={!splitToolbarCollapsed}
                 aria-label={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
+                title={splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
                 onClick={() => setSplitToolbarCollapsed((value) => !value)}
               >
-                {splitToolbarCollapsed ? '▸' : '▾'}
+                <span aria-hidden="true">{splitToolbarCollapsed ? '▸' : '▾'}</span>
+                <span className="sr-only">
+                  {splitToolbarCollapsed ? SPLIT_TOOLBAR_EXPAND_LABEL : SPLIT_TOOLBAR_COLLAPSE_LABEL}
+                </span>
               </button>
             </div>
             {!splitToolbarCollapsed && (
               <div className="schedule-split-toolbar-actions">
                 <button className="btn sm" onClick={() => setSplitOpen(false)}>Split-View schließen</button>
-                <button className="btn sm" onClick={() => void saveSplitSnapshot()}>Stand speichern</button>
+                <button className="btn sm schedule-split-save-button" onClick={() => void saveSplitSnapshot()}>
+                  Stand speichern
+                </button>
                 <label className="schedule-split-select-wrap">
                   <span className="muted">Stand:</span>
                   <select
