@@ -214,7 +214,7 @@ async function commitPracticeUpdateImport(
 }
 
 interface PracticeMatchContext {
-  events: ScheduleEvent[]
+  eventsByStart: Map<string, ScheduleEvent[]>
   teamById: Map<number, { name: string; nameKey: string; ageGroupKey: string }>
 }
 
@@ -230,7 +230,15 @@ async function loadPracticeMatchContext(): Promise<PracticeMatchContext> {
       },
     ]),
   )
-  return { events, teamById }
+  const eventsByStart = new Map<string, ScheduleEvent[]>()
+  for (const event of events) {
+    const start = event.start
+    if (!start) continue
+    const bucket = eventsByStart.get(start)
+    if (bucket) bucket.push(event)
+    else eventsByStart.set(start, [event])
+  }
+  return { eventsByStart, teamById }
 }
 
 function matchesGroup(
@@ -256,10 +264,10 @@ function findPracticeMatch(
   if (!parsed.start) return { ok: false, reason: 'ohne Startzeit' }
   const parsedTeamKey = normKey(parsed.teamName || '')
   const parsedAgeGroupKey = normKey(parsed.ageGroup || '')
-  const candidates = context.events.filter(
+  const startCandidates = context.eventsByStart.get(parsed.start) ?? []
+  const candidates = startCandidates.filter(
     (event) =>
       event.id !== undefined &&
-      event.start === parsed.start &&
       matchesGroup(event, parsedTeamKey, parsedAgeGroupKey, context),
   )
   if (candidates.length === 0) return { ok: false, reason: 'kein Treffer' }
