@@ -142,9 +142,9 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
                       Dry Run: Kein bestehender Termin für diese Einträge gefunden:
                     </p>
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
-                      {s.preview.unmatchedEntries.map((entry) => (
-                        <li key={entry} className="muted">{entry}</li>
-                      ))}
+{s.preview.unmatchedEntries.map((entry, i) => (
+  <li key={`${entry}-${i}`} className="muted">{entry}</li>
+))}
                     </ul>
                   </div>
                 )}
