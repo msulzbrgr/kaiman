@@ -66,8 +66,10 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
   async function commitAll() {
     setBusy(true)
     try {
-      for (const s of staged) {
-        if (s.error) continue
+      // Commit regular source imports first so practice-update imports can find their matches.
+      const regular = staged.filter((s) => !s.error && s.result.mode !== 'practice-update')
+      const practiceUpdates = staged.filter((s) => !s.error && s.result.mode === 'practice-update')
+      for (const s of [...regular, ...practiceUpdates]) {
         await commitImport(s.result, s.kind, s.label, s.fileName)
       }
       onClose()
