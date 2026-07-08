@@ -58,6 +58,8 @@ export interface ScheduleEvent {
   start: string | null // ISO
   end: string | null // ISO
   remarks: string
+  availablePlayerCount?: number
+  possiblePlayerCount?: number
   status: EventStatus
   manual: boolean
 }

@@ -5,7 +5,7 @@ import {
   getOrCreatePerson,
   getOrCreateTeam,
 } from '../db/repo'
-import { normKey } from '../lib/normalize'
+import { ageGroupHint, normKey } from '../lib/normalize'
 import {
   IMPORT_HELPER_ROLE,
   IMPORT_STAFF_ROLE,
@@ -22,6 +22,7 @@ export interface ImportPreview {
   newTeams: string[]
   newPeople: string[]
   reusingSource: boolean
+  unmatchedEntries: string[]
 }
 
 async function findSource(kind: string, fileName: string) {
@@ -33,6 +34,8 @@ export async function previewImport(
   kind: string,
   fileName: string,
 ): Promise<ImportPreview> {
+  if (result.mode === 'practice-update') return previewPracticeUpdateImport(result, kind, fileName)
+
   const source = await findSource(kind, fileName)
   const existing = source?.id
     ? await db.events.where('sourceId').equals(source.id).toArray()
@@ -70,6 +73,7 @@ export async function previewImport(
     newTeams,
     newPeople,
     reusingSource: !!source,
+    unmatchedEntries: [],
   }
 }
 
@@ -92,6 +96,8 @@ export async function commitImport(
   label: string,
   fileName: string,
 ): Promise<{ sourceId: number }> {
+  if (result.mode === 'practice-update') return commitPracticeUpdateImport(result, kind, label, fileName)
+
   const staffRoleId = (await roleIdByKey(IMPORT_STAFF_ROLE))!
   const helperRoleId = (await roleIdByKey(IMPORT_HELPER_ROLE))!
 
@@ -135,6 +141,119 @@ export async function commitImport(
   }
 
   return { sourceId }
+}
+
+async function previewPracticeUpdateImport(
+  result: ImportResult,
+  kind: string,
+  fileName: string,
+): Promise<ImportPreview> {
+  const source = await findSource(kind, fileName)
+  const matchContext = await loadPracticeMatchContext()
+  const unmatchedEntries: string[] = []
+  let updatedEvents = 0
+
+  for (const ev of result.events) {
+    const match = findPracticeMatch(ev, matchContext)
+    if (!match.ok) {
+      unmatchedEntries.push(renderPracticeEntryLabel(ev, match.reason))
+      continue
+    }
+    updatedEvents += 1
+  }
+
+  return {
+    fileName,
+    total: result.events.length,
+    newEvents: 0,
+    updatedEvents,
+    cancelledEvents: 0,
+    newTeams: [],
+    newPeople: [],
+    reusingSource: !!source,
+    unmatchedEntries,
+  }
+}
+
+async function commitPracticeUpdateImport(
+  result: ImportResult,
+  kind: string,
+  label: string,
+  fileName: string,
+): Promise<{ sourceId: number }> {
+  const existingSource = await findSource(kind, fileName)
+  const importedAt = new Date().toISOString()
+  let sourceId: number
+  if (existingSource?.id) {
+    sourceId = existingSource.id
+    await db.sources.update(sourceId, { importedAt, label })
+  } else {
+    sourceId = await db.sources.add({ kind, label, fileName, importedAt })
+  }
+
+  const matchContext = await loadPracticeMatchContext()
+  for (const ev of result.events) {
+    const match = findPracticeMatch(ev, matchContext)
+    if (!match.ok) continue
+    await db.events.update(match.event.id!, {
+      availablePlayerCount: ev.availablePlayerCount ?? 0,
+      possiblePlayerCount: ev.possiblePlayerCount ?? ev.availablePlayerCount ?? 0,
+    })
+  }
+
+  return { sourceId }
+}
+
+interface PracticeMatchContext {
+  events: ScheduleEvent[]
+  teamById: Map<number, { name: string; nameKey: string; ageGroupKey: string }>
+}
+
+async function loadPracticeMatchContext(): Promise<PracticeMatchContext> {
+  const [events, teams] = await Promise.all([db.events.toArray(), db.teams.toArray()])
+  const teamById = new Map(
+    teams.map((team) => [
+      team.id!,
+      {
+        name: team.name,
+        nameKey: normKey(team.name),
+        ageGroupKey: normKey(team.ageGroup || ageGroupHint(team.name)),
+      },
+    ]),
+  )
+  return { events, teamById }
+}
+
+function matchesGroup(event: ScheduleEvent, parsed: ParsedEvent, context: PracticeMatchContext): boolean {
+  const team = context.teamById.get(event.teamId)
+  if (!team) return false
+  const parsedTeamKey = normKey(parsed.teamName || '')
+  const parsedAgeGroupKey = normKey(parsed.ageGroup || '')
+  if (parsedTeamKey && parsedTeamKey === team.nameKey) return true
+  if (parsedAgeGroupKey && parsedAgeGroupKey === team.ageGroupKey) return true
+  return false
+}
+
+function findPracticeMatch(
+  parsed: ParsedEvent,
+  context: PracticeMatchContext,
+): { ok: true; event: ScheduleEvent } | { ok: false; reason: string } {
+  if (!parsed.start) return { ok: false, reason: 'ohne Startzeit' }
+  const candidates = context.events.filter(
+    (event) => event.id !== undefined && event.start === parsed.start && matchesGroup(event, parsed, context),
+  )
+  if (candidates.length === 0) return { ok: false, reason: 'kein bestehender Termin' }
+  if (candidates.length === 1) return { ok: true, event: candidates[0] }
+
+  const endMatched = candidates.filter((event) => event.end === parsed.end)
+  if (endMatched.length === 1) return { ok: true, event: endMatched[0] }
+  return { ok: false, reason: 'mehrdeutiger Treffer' }
+}
+
+function renderPracticeEntryLabel(ev: ParsedEvent, reason: string): string {
+  const teamOrGroup = ev.teamName || ev.ageGroup || 'ohne Gruppe'
+  const start = ev.start ? ev.start.replace('T', ' ').slice(0, 16) : ev.sourceKey
+  return `${start} · ${teamOrGroup} (${reason})`
 }
 
 async function upsertEvent(

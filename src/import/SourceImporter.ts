@@ -4,6 +4,7 @@ import type { EventType } from '../db/types'
 /** A schedule row as produced by any importer, before it touches the DB. */
 export interface ParsedEvent {
   teamName: string
+  ageGroup?: string
   type: EventType
   art: string
   opponent: string
@@ -14,6 +15,8 @@ export interface ParsedEvent {
   start: string | null
   end: string | null
   remarks: string
+  availablePlayerCount?: number
+  possiblePlayerCount?: number
   /** People parsed from the source, with the role key they default to. */
   staff: ParsedName[]
   helpers: ParsedName[]
@@ -22,6 +25,7 @@ export interface ParsedEvent {
 }
 
 export interface ImportResult {
+  mode?: 'source-merge' | 'practice-update'
   events: ParsedEvent[]
   /** Distinct team names seen. */
   teamNames: string[]

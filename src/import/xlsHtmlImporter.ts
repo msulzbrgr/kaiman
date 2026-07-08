@@ -19,9 +19,25 @@ function classifyHeader(h: string): string | null {
   if (s.startsWith('start')) return 'startTime'
   if (s.startsWith('ende')) return 'endTime'
   if (s.startsWith('bemerkung')) return 'remarks'
+  if (s.startsWith('verfügbar') || s.startsWith('verfugbar')) return 'availablePlayers'
+  if (s.startsWith('zusätzliche spieler') || s.startsWith('zusatzliche spieler'))
+    return 'additionalPlayers'
   if (s.includes('coach') || s.includes('staff')) return 'staff'
   if (s.startsWith('helfer')) return 'helpers'
   return null
+}
+
+function parsePeopleCount(cell: string): number | null {
+  const cleaned = cleanText(cell ?? '')
+  if (!cleaned || cleaned === '-') return 0
+  const totalMatch = cleaned.match(/[([]\s*total\s*:\s*(\d+)\s*[)\]]/i)
+  if (totalMatch) return Number(totalMatch[1])
+  if (/^\d+$/.test(cleaned)) return Number(cleaned)
+  const parts = cleaned
+    .split(/[,\n;]/)
+    .map((part) => cleanText(part))
+    .filter((part) => part && part !== '-')
+  return parts.length
 }
 
 export const xlsHtmlImporter: SourceImporter = {
@@ -44,6 +60,8 @@ export const xlsHtmlImporter: SourceImporter = {
     // First row = header.
     const headerCells = Array.from(rows[0].querySelectorAll('th, td'))
     const fieldByCol = headerCells.map((c) => classifyHeader(cleanText(c.textContent ?? '')))
+    const isPracticeUpdate =
+      fieldByCol.includes('availablePlayers') || fieldByCol.includes('additionalPlayers')
 
     const events: ParsedEvent[] = []
     const teamNames = new Set<string>()
@@ -59,7 +77,8 @@ export const xlsHtmlImporter: SourceImporter = {
 
       const date = get('date')
       const teamName = get('team')
-      if (!date || !teamName) continue
+      const ageGroup = get('ageGroup')
+      if (!date || (!teamName && !ageGroup)) continue
 
       const typeRaw = get('type').toLowerCase()
       const type = typeRaw.includes('spiel') ? 'game' : 'training'
@@ -72,17 +91,25 @@ export const xlsHtmlImporter: SourceImporter = {
       const helpers = splitPeopleCell(get('helpers'))
       staff.forEach((p: ParsedName) => peopleNames.add(p.displayName))
       helpers.forEach((p: ParsedName) => peopleNames.add(p.displayName))
-      teamNames.add(teamName)
+      if (teamName) teamNames.add(teamName)
 
       const location = get('location')
       const remarks = get('remarks')
+      const availablePlayerCount = isPracticeUpdate ? parsePeopleCount(get('availablePlayers')) : null
+      const additionalPlayerCount = isPracticeUpdate ? parsePeopleCount(get('additionalPlayers')) : null
+      const possiblePlayerCount =
+        isPracticeUpdate && (availablePlayerCount !== null || additionalPlayerCount !== null)
+          ? (availablePlayerCount ?? 0) + (additionalPlayerCount ?? 0)
+          : null
       // Identity = date|team|start plus location/remarks to separate distinct
       // events that share the same slot (e.g. two simultaneous tournament games).
-      const sourceKey = [date, normKey(teamName), startTime, normKey(location), normKey(remarks)]
-        .join('|')
+      const sourceKey = isPracticeUpdate
+        ? [date, normKey(teamName || ageGroup), startTime].join('|')
+        : [date, normKey(teamName), startTime, normKey(location), normKey(remarks)].join('|')
 
       events.push({
         teamName,
+        ageGroup,
         type,
         art: get('art'),
         opponent: get('opponent'),
@@ -93,6 +120,8 @@ export const xlsHtmlImporter: SourceImporter = {
         start,
         end,
         remarks,
+        availablePlayerCount: availablePlayerCount ?? undefined,
+        possiblePlayerCount: possiblePlayerCount ?? undefined,
         staff,
         helpers,
         sourceKey,
@@ -100,6 +129,7 @@ export const xlsHtmlImporter: SourceImporter = {
     }
 
     return {
+      mode: isPracticeUpdate ? 'practice-update' : 'source-merge',
       events,
       teamNames: [...teamNames],
       peopleNames: [...peopleNames],
