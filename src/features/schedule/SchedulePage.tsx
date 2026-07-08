@@ -257,9 +257,9 @@ function buildFcEvents({
       const title = `${getEventTypeIcon(event)} ${teamLabel}${detail}`
       const counts = attendeeCountsByEvent.get(event.id!)
       const conflicts = conflictsByEvent.get(event.id!) ?? []
-      const importedAvailablePlayerCount =
+      const availableFromImport =
         typeof event.availablePlayerCount === 'number' ? event.availablePlayerCount : undefined
-      const displayedPlayerCount = importedAvailablePlayerCount ?? counts?.playerCount
+      const displayedPlayerCount = availableFromImport ?? counts?.playerCount
       return {
         id: String(event.id),
         title: event.status === 'cancelled' ? `[Entfällt] ${title}` : title,

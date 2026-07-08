@@ -66,7 +66,8 @@ export const xlsHtmlImporter: SourceImporter = {
       const date = get('date')
       const teamName = get('team')
       const ageGroup = get('ageGroup')
-      if (!date || (!teamName && !ageGroup)) continue
+      const groupKey = teamName || ageGroup
+      if (!date || !groupKey) continue
 
       const typeRaw = get('type').toLowerCase()
       const type = typeRaw.includes('spiel') ? 'game' : 'training'
@@ -91,7 +92,7 @@ export const xlsHtmlImporter: SourceImporter = {
       // Identity = date|team|start plus location/remarks to separate distinct
       // events that share the same slot (e.g. two simultaneous tournament games).
       const sourceKey = isPracticeUpdate
-        ? [date, normKey(teamName || ageGroup), startTime].join('|')
+        ? [date, normKey(groupKey), startTime].join('|')
         : [date, normKey(teamName), startTime, normKey(location), normKey(remarks)].join('|')
 
       events.push({

@@ -80,8 +80,7 @@ function renderEventContent(arg: EventContentArg) {
     infoParts.push(`${coachCount} Coach${coachCount !== 1 ? 'es' : ''}`)
   if (
     playerCount !== undefined &&
-    possiblePlayerCount !== undefined &&
-    possiblePlayerCount > 0
+    possiblePlayerCount !== undefined
   ) {
     infoParts.push(`${playerCount}/${possiblePlayerCount} Spieler`)
   } else if (playerCount !== undefined && playerCount > 0) {

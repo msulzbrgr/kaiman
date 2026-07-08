@@ -2,7 +2,8 @@ import { cleanText } from '../lib/normalize'
 
 export function parsePeopleCount(cell: string): number | null {
   const cleaned = cleanText(cell ?? '')
-  if (!cleaned || cleaned === '-') return 0
+  if (!cleaned) return null
+  if (cleaned === '-') return 0
   const totalMatch = cleaned.match(/[([]\s*total\s*:\s*(\d+)\s*[)\]]/i)
   if (totalMatch) return Number(totalMatch[1])
   if (/^\d+$/.test(cleaned)) return Number(cleaned)

@@ -196,10 +196,16 @@ async function commitPracticeUpdateImport(
   for (const ev of result.events) {
     const match = findPracticeMatch(ev, matchContext)
     if (!match.ok) continue
-    await db.events.update(match.event.id!, {
-      availablePlayerCount: ev.availablePlayerCount ?? 0,
-      possiblePlayerCount: ev.possiblePlayerCount ?? ev.availablePlayerCount ?? 0,
-    })
+    const patch: Partial<ScheduleEvent> = {}
+    if (typeof ev.availablePlayerCount === 'number') {
+      patch.availablePlayerCount = ev.availablePlayerCount
+    }
+    if (typeof ev.possiblePlayerCount === 'number') {
+      patch.possiblePlayerCount = ev.possiblePlayerCount
+    }
+    if (Object.keys(patch).length > 0) {
+      await db.events.update(match.event.id!, patch)
+    }
   }
 
   return { sourceId }
@@ -233,9 +239,12 @@ function matchesGroup(
 ): boolean {
   const team = context.teamById.get(event.teamId)
   if (!team) return false
-  if (parsedTeamKey && parsedTeamKey === team.nameKey) return true
-  if (parsedAgeGroupKey && parsedAgeGroupKey === team.ageGroupKey) return true
-  return false
+  if (parsedTeamKey && parsedAgeGroupKey) {
+    return parsedTeamKey === team.nameKey && parsedAgeGroupKey === team.ageGroupKey
+  }
+  if (parsedTeamKey) return parsedTeamKey === team.nameKey
+  if (parsedAgeGroupKey) return parsedAgeGroupKey === team.ageGroupKey
+  return true
 }
 
 function findPracticeMatch(
@@ -261,7 +270,7 @@ function findPracticeMatch(
 
 function renderPracticeEntryLabel(ev: ParsedEvent, reason: string): string {
   const teamOrGroup = ev.teamName || ev.ageGroup || 'ohne Gruppe'
-  const start = ev.start ? `${fmtDate(ev.start)} ${fmtTime(ev.start)}` : ev.sourceKey
+  const start = ev.start ? `${fmtDate(ev.start)} ${fmtTime(ev.start)}` : '(keine Zeit)'
   return `${start} · ${teamOrGroup} (${reason})`
 }
 

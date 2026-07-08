@@ -77,7 +77,8 @@ export const xlsBinaryImporter: SourceImporter = {
       const date = get('date')
       const teamName = get('team')
       const ageGroup = get('ageGroup')
-      if (!date || (!teamName && !ageGroup)) continue
+      const groupKey = teamName || ageGroup
+      if (!date || !groupKey) continue
 
       const typeRaw = get('type').toLowerCase()
       const type = typeRaw.includes('spiel') ? 'game' : 'training'
@@ -100,7 +101,7 @@ export const xlsBinaryImporter: SourceImporter = {
         ? combinePlayerCounts(availablePlayerCount, additionalPlayerCount)
         : null
       const sourceKey = isPracticeUpdate
-        ? [date, normKey(teamName || ageGroup), startTime].join('|')
+        ? [date, normKey(groupKey), startTime].join('|')
         : [date, normKey(teamName), startTime, normKey(location), normKey(remarks)].join('|')
 
       events.push({
