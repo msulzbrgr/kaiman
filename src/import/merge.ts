@@ -157,7 +157,7 @@ async function previewPracticeUpdateImport(
   for (const ev of result.events) {
     const match = findPracticeMatch(ev, matchContext)
     if (!match.ok) {
-      unmatchedEntries.push(renderPracticeEntryLabel(ev, match.reason))
+      unmatchedEntries.push(formatPracticeEntryLabel(ev, match.reason))
       continue
     }
     updatedEvents += 1
@@ -244,7 +244,7 @@ function matchesGroup(
   }
   if (parsedTeamKey) return parsedTeamKey === team.nameKey
   if (parsedAgeGroupKey) return parsedAgeGroupKey === team.ageGroupKey
-  return true
+  return false
 }
 
 function findPracticeMatch(
@@ -260,7 +260,7 @@ function findPracticeMatch(
       event.start === parsed.start &&
       matchesGroup(event, parsedTeamKey, parsedAgeGroupKey, context),
   )
-  if (candidates.length === 0) return { ok: false, reason: 'kein bestehender Termin' }
+  if (candidates.length === 0) return { ok: false, reason: 'kein Treffer' }
   if (candidates.length === 1) return { ok: true, event: candidates[0] }
 
   const endMatched = candidates.filter((event) => event.end === parsed.end)
@@ -268,7 +268,7 @@ function findPracticeMatch(
   return { ok: false, reason: 'mehrdeutiger Treffer' }
 }
 
-function renderPracticeEntryLabel(ev: ParsedEvent, reason: string): string {
+function formatPracticeEntryLabel(ev: ParsedEvent, reason: string): string {
   const teamOrGroup = ev.teamName || ev.ageGroup || 'ohne Gruppe'
   const start = ev.start ? `${fmtDate(ev.start)} ${fmtTime(ev.start)}` : '(keine Zeit)'
   return `${start} · ${teamOrGroup} (${reason})`

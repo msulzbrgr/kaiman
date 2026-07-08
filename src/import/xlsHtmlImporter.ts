@@ -66,7 +66,7 @@ export const xlsHtmlImporter: SourceImporter = {
       const date = get('date')
       const teamName = get('team')
       const ageGroup = get('ageGroup')
-      const groupKey = teamName || ageGroup
+      const groupKey = teamName !== '' ? teamName : ageGroup
       if (!date || !groupKey) continue
 
       const typeRaw = get('type').toLowerCase()
