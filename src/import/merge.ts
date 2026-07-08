@@ -154,14 +154,16 @@ async function previewPracticeUpdateImport(
   const unmatchedEntries: string[] = []
   let updatedEvents = 0
 
-  for (const ev of result.events) {
-    const match = findPracticeMatch(ev, matchContext)
-    if (!match.ok) {
-      unmatchedEntries.push(formatPracticeEntryLabel(ev, match.reason))
-      continue
-    }
+for (const ev of result.events) {
+  const match = findPracticeMatch(ev, matchContext)
+  if (!match.ok) {
+    unmatchedEntries.push(formatPracticeEntryLabel(ev, match.reason))
+    continue
+  }
+  if (typeof ev.availablePlayerCount === 'number' || typeof ev.possiblePlayerCount === 'number') {
     updatedEvents += 1
   }
+}
 
   return {
     fileName,
