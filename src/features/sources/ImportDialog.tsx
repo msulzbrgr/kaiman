@@ -127,6 +127,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
                   <span className="kpi"><b>{s.preview.newEvents}</b><span>neu</span></span>
                   <span className="kpi"><b>{s.preview.updatedEvents}</b><span>aktualisiert</span></span>
                   <span className="kpi"><b>{s.preview.cancelledEvents}</b><span>entfällt</span></span>
+                  <span className="kpi"><b>{s.preview.unmatchedEntries.length}</b><span>kein Treffer</span></span>
                   <span className="kpi"><b>{s.preview.newPeople.length}</b><span>neue Personen</span></span>
                   <span className="kpi"><b>{s.preview.newTeams.length}</b><span>neue Teams</span></span>
                 </div>
@@ -134,6 +135,18 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
                   <p className="muted" style={{ marginTop: 8 }}>
                     Neue Teams: {s.preview.newTeams.join(', ')}
                   </p>
+                )}
+                {s.preview.unmatchedEntries.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <p className="muted" style={{ margin: '0 0 6px' }}>
+                      Dry Run: Kein bestehender Termin für diese Einträge gefunden:
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: 20 }}>
+{s.preview.unmatchedEntries.map((entry, i) => (
+  <li key={`${entry}-${i}`} className="muted">{entry}</li>
+))}
+                    </ul>
+                  </div>
                 )}
               </>
             )}

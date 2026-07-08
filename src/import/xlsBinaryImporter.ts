@@ -2,6 +2,7 @@ import { readSheet } from 'read-excel-file/browser'
 import { parseStartEnd } from '../lib/dateParse'
 import { splitPeopleCell, type ParsedName } from '../lib/nameParse'
 import { cleanText, normKey } from '../lib/normalize'
+import { combinePlayerCounts, parsePeopleCount } from './playerAvailability'
 import type { ImportResult, ParsedEvent, SourceImporter } from './SourceImporter'
 
 function classifyHeader(h: string): string | null {
@@ -19,6 +20,9 @@ function classifyHeader(h: string): string | null {
   if (s.startsWith('start')) return 'startTime'
   if (s.startsWith('ende')) return 'endTime'
   if (s.startsWith('bemerkung')) return 'remarks'
+  if (s.startsWith('verfügbar') || s.startsWith('verfugbar')) return 'availablePlayers'
+  if (s.startsWith('zusätzliche spieler') || s.startsWith('zusatzliche spieler'))
+    return 'additionalPlayers'
   if (s.includes('coach') || s.includes('staff')) return 'staff'
   if (s.startsWith('helfer')) return 'helpers'
   return null
@@ -57,6 +61,8 @@ export const xlsBinaryImporter: SourceImporter = {
     // First row = header.
     const headerRow = rows[0].map((cell) => cleanText(String(cell ?? '')))
     const fieldByCol = headerRow.map((h) => classifyHeader(h))
+    const isPracticeUpdate =
+      fieldByCol.includes('availablePlayers') || fieldByCol.includes('additionalPlayers')
 
     const events: ParsedEvent[] = []
     const teamNames = new Set<string>()
@@ -70,7 +76,9 @@ export const xlsBinaryImporter: SourceImporter = {
 
       const date = get('date')
       const teamName = get('team')
-      if (!date || !teamName) continue
+      const ageGroup = get('ageGroup')
+      const groupKey = teamName !== '' ? teamName : ageGroup
+      if (!date || !groupKey) continue
 
       const typeRaw = get('type').toLowerCase()
       const type = typeRaw.includes('spiel') ? 'game' : 'training'
@@ -83,15 +91,22 @@ export const xlsBinaryImporter: SourceImporter = {
       const helpers = splitPeopleCell(get('helpers'))
       staff.forEach((p: ParsedName) => peopleNames.add(p.displayName))
       helpers.forEach((p: ParsedName) => peopleNames.add(p.displayName))
-      teamNames.add(teamName)
+      if (teamName) teamNames.add(teamName)
 
       const location = get('location')
       const remarks = get('remarks')
-      const sourceKey = [date, normKey(teamName), startTime, normKey(location), normKey(remarks)]
-        .join('|')
+      const availablePlayerCount = isPracticeUpdate ? parsePeopleCount(get('availablePlayers')) : null
+      const additionalPlayerCount = isPracticeUpdate ? parsePeopleCount(get('additionalPlayers')) : null
+      const possiblePlayerCount = isPracticeUpdate
+        ? combinePlayerCounts(availablePlayerCount, additionalPlayerCount)
+        : null
+      const sourceKey = isPracticeUpdate
+        ? [date, normKey(groupKey), startTime].join('|')
+        : [date, normKey(teamName), startTime, normKey(location), normKey(remarks)].join('|')
 
       events.push({
         teamName,
+        ageGroup,
         type,
         art: get('art'),
         opponent: get('opponent'),
@@ -102,6 +117,8 @@ export const xlsBinaryImporter: SourceImporter = {
         start,
         end,
         remarks,
+        availablePlayerCount: availablePlayerCount ?? undefined,
+        possiblePlayerCount: possiblePlayerCount ?? undefined,
         staff,
         helpers,
         sourceKey,
@@ -109,6 +126,7 @@ export const xlsBinaryImporter: SourceImporter = {
     }
 
     return {
+      mode: isPracticeUpdate ? 'practice-update' : 'source-merge',
       events,
       teamNames: [...teamNames],
       peopleNames: [...peopleNames],

@@ -17,6 +17,7 @@ export interface FcEvent {
   color: string
   cancelled: boolean
   playerCount?: number
+  possiblePlayerCount?: number
   coachCount?: number
   conflictingPeople?: string[]
 }
@@ -66,6 +67,10 @@ function renderEventContent(arg: EventContentArg) {
     typeof arg.event.extendedProps.coachCount === 'number'
       ? arg.event.extendedProps.coachCount
       : undefined
+  const possiblePlayerCount =
+    typeof arg.event.extendedProps.possiblePlayerCount === 'number'
+      ? arg.event.extendedProps.possiblePlayerCount
+      : undefined
   const conflictingPeople: string[] = Array.isArray(arg.event.extendedProps.conflictingPeople)
     ? (arg.event.extendedProps.conflictingPeople as string[])
     : []
@@ -73,7 +78,14 @@ function renderEventContent(arg: EventContentArg) {
   const infoParts: string[] = []
   if (coachCount !== undefined && coachCount > 0)
     infoParts.push(`${coachCount} Coach${coachCount !== 1 ? 'es' : ''}`)
-  if (playerCount !== undefined && playerCount > 0) infoParts.push(`${playerCount} Spieler`)
+  if (
+    playerCount !== undefined &&
+    possiblePlayerCount !== undefined
+  ) {
+    infoParts.push(`${playerCount}/${possiblePlayerCount} Spieler`)
+  } else if (playerCount !== undefined && playerCount > 0) {
+    infoParts.push(`${playerCount} Spieler`)
+  }
 
   return (
     <div className="schedule-calendar-event">
@@ -223,6 +235,7 @@ export default function CalendarView({
           end: e.end,
           remarks: e.remarks,
           playerCount: e.playerCount,
+          possiblePlayerCount: e.possiblePlayerCount,
           coachCount: e.coachCount,
           conflictingPeople: e.conflictingPeople,
           backgroundColor: e.cancelled ? '#c2c6cd' : e.color,
