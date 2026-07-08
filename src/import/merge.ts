@@ -184,33 +184,35 @@ async function commitPracticeUpdateImport(
   label: string,
   fileName: string,
 ): Promise<{ sourceId: number }> {
-  const existingSource = await findSource(kind, fileName)
-  const importedAt = new Date().toISOString()
-  let sourceId: number
-  if (existingSource?.id) {
-    sourceId = existingSource.id
-    await db.sources.update(sourceId, { importedAt, label })
-  } else {
-    sourceId = await db.sources.add({ kind, label, fileName, importedAt })
-  }
+  return db.transaction('rw', db.sources, db.events, db.teams, async () => {
+    const existingSource = await findSource(kind, fileName)
+    const importedAt = new Date().toISOString()
+    let sourceId: number
+    if (existingSource?.id) {
+      sourceId = existingSource.id
+      await db.sources.update(sourceId, { importedAt, label })
+    } else {
+      sourceId = await db.sources.add({ kind, label, fileName, importedAt })
+    }
 
-  const matchContext = await loadPracticeMatchContext()
-  for (const ev of result.events) {
-    const match = findPracticeMatch(ev, matchContext)
-    if (!match.ok) continue
-    const patch: Partial<ScheduleEvent> = {}
-    if (typeof ev.availablePlayerCount === 'number') {
-      patch.availablePlayerCount = ev.availablePlayerCount
+    const matchContext = await loadPracticeMatchContext()
+    for (const ev of result.events) {
+      const match = findPracticeMatch(ev, matchContext)
+      if (!match.ok) continue
+      const patch: Partial<ScheduleEvent> = {}
+      if (typeof ev.availablePlayerCount === 'number') {
+        patch.availablePlayerCount = ev.availablePlayerCount
+      }
+      if (typeof ev.possiblePlayerCount === 'number') {
+        patch.possiblePlayerCount = ev.possiblePlayerCount
+      }
+      if (Object.keys(patch).length > 0) {
+        await db.events.update(match.event.id!, patch)
+      }
     }
-    if (typeof ev.possiblePlayerCount === 'number') {
-      patch.possiblePlayerCount = ev.possiblePlayerCount
-    }
-    if (Object.keys(patch).length > 0) {
-      await db.events.update(match.event.id!, patch)
-    }
-  }
 
-  return { sourceId }
+    return { sourceId }
+  })
 }
 
 interface PracticeMatchContext {
