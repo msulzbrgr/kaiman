@@ -257,10 +257,9 @@ function buildFcEvents({
       const title = `${getEventTypeIcon(event)} ${teamLabel}${detail}`
       const counts = attendeeCountsByEvent.get(event.id!)
       const conflicts = conflictsByEvent.get(event.id!) ?? []
-      const playerCount =
-        typeof event.availablePlayerCount === 'number'
-          ? event.availablePlayerCount
-          : counts?.playerCount
+      const importedAvailablePlayerCount =
+        typeof event.availablePlayerCount === 'number' ? event.availablePlayerCount : undefined
+      const displayedPlayerCount = importedAvailablePlayerCount ?? counts?.playerCount
       return {
         id: String(event.id),
         title: event.status === 'cancelled' ? `[Entfällt] ${title}` : title,
@@ -269,7 +268,7 @@ function buildFcEvents({
         remarks: getNonEmptyText(event.remarks) ?? undefined,
         color: team?.color ?? '#2563eb',
         cancelled: event.status === 'cancelled',
-        playerCount,
+        playerCount: displayedPlayerCount,
         possiblePlayerCount: event.possiblePlayerCount,
         coachCount: counts?.coachCount,
         conflictingPeople: conflicts.length > 0 ? conflicts : undefined,

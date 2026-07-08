@@ -1,6 +1,7 @@
 import { parseStartEnd } from '../lib/dateParse'
 import { splitPeopleCell, type ParsedName } from '../lib/nameParse'
 import { cleanText, normKey } from '../lib/normalize'
+import { combinePlayerCounts, parsePeopleCount } from './playerAvailability'
 import type { ImportResult, ParsedEvent, SourceImporter } from './SourceImporter'
 
 // Maps a normalized header label to our field name.
@@ -25,19 +26,6 @@ function classifyHeader(h: string): string | null {
   if (s.includes('coach') || s.includes('staff')) return 'staff'
   if (s.startsWith('helfer')) return 'helpers'
   return null
-}
-
-function parsePeopleCount(cell: string): number | null {
-  const cleaned = cleanText(cell ?? '')
-  if (!cleaned || cleaned === '-') return 0
-  const totalMatch = cleaned.match(/[([]\s*total\s*:\s*(\d+)\s*[)\]]/i)
-  if (totalMatch) return Number(totalMatch[1])
-  if (/^\d+$/.test(cleaned)) return Number(cleaned)
-  const parts = cleaned
-    .split(/[,\n;]/)
-    .map((part) => cleanText(part))
-    .filter((part) => part && part !== '-')
-  return parts.length
 }
 
 export const xlsHtmlImporter: SourceImporter = {
@@ -97,10 +85,9 @@ export const xlsHtmlImporter: SourceImporter = {
       const remarks = get('remarks')
       const availablePlayerCount = isPracticeUpdate ? parsePeopleCount(get('availablePlayers')) : null
       const additionalPlayerCount = isPracticeUpdate ? parsePeopleCount(get('additionalPlayers')) : null
-      const possiblePlayerCount =
-        isPracticeUpdate && (availablePlayerCount !== null || additionalPlayerCount !== null)
-          ? (availablePlayerCount ?? 0) + (additionalPlayerCount ?? 0)
-          : null
+      const possiblePlayerCount = isPracticeUpdate
+        ? combinePlayerCounts(availablePlayerCount, additionalPlayerCount)
+        : null
       // Identity = date|team|start plus location/remarks to separate distinct
       // events that share the same slot (e.g. two simultaneous tournament games).
       const sourceKey = isPracticeUpdate

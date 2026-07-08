@@ -2,6 +2,7 @@ import { readSheet } from 'read-excel-file/browser'
 import { parseStartEnd } from '../lib/dateParse'
 import { splitPeopleCell, type ParsedName } from '../lib/nameParse'
 import { cleanText, normKey } from '../lib/normalize'
+import { combinePlayerCounts, parsePeopleCount } from './playerAvailability'
 import type { ImportResult, ParsedEvent, SourceImporter } from './SourceImporter'
 
 function classifyHeader(h: string): string | null {
@@ -25,19 +26,6 @@ function classifyHeader(h: string): string | null {
   if (s.includes('coach') || s.includes('staff')) return 'staff'
   if (s.startsWith('helfer')) return 'helpers'
   return null
-}
-
-function parsePeopleCount(cell: string): number | null {
-  const cleaned = cleanText(cell ?? '')
-  if (!cleaned || cleaned === '-') return 0
-  const totalMatch = cleaned.match(/[([]\s*total\s*:\s*(\d+)\s*[)\]]/i)
-  if (totalMatch) return Number(totalMatch[1])
-  if (/^\d+$/.test(cleaned)) return Number(cleaned)
-  const parts = cleaned
-    .split(/[,\n;]/)
-    .map((part) => cleanText(part))
-    .filter((part) => part && part !== '-')
-  return parts.length
 }
 
 /** Detect binary Excel files by magic bytes or .xlsx extension. */
@@ -108,10 +96,9 @@ export const xlsBinaryImporter: SourceImporter = {
       const remarks = get('remarks')
       const availablePlayerCount = isPracticeUpdate ? parsePeopleCount(get('availablePlayers')) : null
       const additionalPlayerCount = isPracticeUpdate ? parsePeopleCount(get('additionalPlayers')) : null
-      const possiblePlayerCount =
-        isPracticeUpdate && (availablePlayerCount !== null || additionalPlayerCount !== null)
-          ? (availablePlayerCount ?? 0) + (additionalPlayerCount ?? 0)
-          : null
+      const possiblePlayerCount = isPracticeUpdate
+        ? combinePlayerCounts(availablePlayerCount, additionalPlayerCount)
+        : null
       const sourceKey = isPracticeUpdate
         ? [date, normKey(teamName || ageGroup), startTime].join('|')
         : [date, normKey(teamName), startTime, normKey(location), normKey(remarks)].join('|')

@@ -5,6 +5,7 @@ import {
   getOrCreatePerson,
   getOrCreateTeam,
 } from '../db/repo'
+import { fmtDate, fmtTime } from '../lib/dateParse'
 import { ageGroupHint, normKey } from '../lib/normalize'
 import {
   IMPORT_HELPER_ROLE,
@@ -224,11 +225,14 @@ async function loadPracticeMatchContext(): Promise<PracticeMatchContext> {
   return { events, teamById }
 }
 
-function matchesGroup(event: ScheduleEvent, parsed: ParsedEvent, context: PracticeMatchContext): boolean {
+function matchesGroup(
+  event: ScheduleEvent,
+  parsedTeamKey: string,
+  parsedAgeGroupKey: string,
+  context: PracticeMatchContext,
+): boolean {
   const team = context.teamById.get(event.teamId)
   if (!team) return false
-  const parsedTeamKey = normKey(parsed.teamName || '')
-  const parsedAgeGroupKey = normKey(parsed.ageGroup || '')
   if (parsedTeamKey && parsedTeamKey === team.nameKey) return true
   if (parsedAgeGroupKey && parsedAgeGroupKey === team.ageGroupKey) return true
   return false
@@ -239,8 +243,13 @@ function findPracticeMatch(
   context: PracticeMatchContext,
 ): { ok: true; event: ScheduleEvent } | { ok: false; reason: string } {
   if (!parsed.start) return { ok: false, reason: 'ohne Startzeit' }
+  const parsedTeamKey = normKey(parsed.teamName || '')
+  const parsedAgeGroupKey = normKey(parsed.ageGroup || '')
   const candidates = context.events.filter(
-    (event) => event.id !== undefined && event.start === parsed.start && matchesGroup(event, parsed, context),
+    (event) =>
+      event.id !== undefined &&
+      event.start === parsed.start &&
+      matchesGroup(event, parsedTeamKey, parsedAgeGroupKey, context),
   )
   if (candidates.length === 0) return { ok: false, reason: 'kein bestehender Termin' }
   if (candidates.length === 1) return { ok: true, event: candidates[0] }
@@ -252,7 +261,7 @@ function findPracticeMatch(
 
 function renderPracticeEntryLabel(ev: ParsedEvent, reason: string): string {
   const teamOrGroup = ev.teamName || ev.ageGroup || 'ohne Gruppe'
-  const start = ev.start ? ev.start.replace('T', ' ').slice(0, 16) : ev.sourceKey
+  const start = ev.start ? `${fmtDate(ev.start)} ${fmtTime(ev.start)}` : ev.sourceKey
   return `${start} · ${teamOrGroup} (${reason})`
 }
 
