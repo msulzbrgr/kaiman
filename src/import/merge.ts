@@ -34,8 +34,11 @@ export async function previewImport(
   result: ImportResult,
   kind: string,
   fileName: string,
+  pendingRegularImports: ImportResult[] = [],
 ): Promise<ImportPreview> {
-  if (result.mode === 'practice-update') return previewPracticeUpdateImport(result, kind, fileName)
+  if (result.mode === 'practice-update') {
+    return previewPracticeUpdateImport(result, kind, fileName, pendingRegularImports)
+  }
 
   const source = await findSource(kind, fileName)
   const existing = source?.id
@@ -149,22 +152,23 @@ async function previewPracticeUpdateImport(
   result: ImportResult,
   kind: string,
   fileName: string,
+  pendingRegularImports: ImportResult[],
 ): Promise<ImportPreview> {
   const source = await findSource(kind, fileName)
-  const matchContext = await loadPracticeMatchContext()
+  const matchContext = await loadPracticeMatchContext(pendingRegularImports)
   const unmatchedEntries: string[] = []
   let updatedEvents = 0
 
-for (const ev of result.events) {
-  const match = findPracticeMatch(ev, matchContext)
-  if (!match.ok) {
-    unmatchedEntries.push(formatPracticeEntryLabel(ev, match.reason))
-    continue
-  }
-  if (typeof ev.availablePlayerCount === 'number' || typeof ev.possiblePlayerCount === 'number') {
-    updatedEvents += 1
-  }
-}
+  for (const ev of result.events) {
+   const match = findPracticeMatch(ev, matchContext)
+   if (!match.ok) {
+     unmatchedEntries.push(formatPracticeEntryLabel(ev, match.reason))
+     continue
+   }
+   if (typeof ev.availablePlayerCount === 'number' || typeof ev.possiblePlayerCount === 'number') {
+     updatedEvents += 1
+   }
+ }
 
   return {
     fileName,
@@ -221,8 +225,21 @@ interface PracticeMatchContext {
   teamById: Map<number, { name: string; nameKey: string; ageGroupKey: string }>
 }
 
-async function loadPracticeMatchContext(): Promise<PracticeMatchContext> {
-  const [events, teams] = await Promise.all([db.events.toArray(), db.teams.toArray()])
+async function loadPracticeMatchContext(
+  pendingRegularImports: ImportResult[] = [],
+): Promise<PracticeMatchContext> {
+  const pendingEvents: ImportResult['events'] = []
+  const pendingSourceKeys = new Set<string>()
+  for (const result of pendingRegularImports) {
+    for (const event of result.events) {
+      pendingEvents.push(event)
+      pendingSourceKeys.add(event.sourceKey)
+    }
+  }
+  const [events, teams] = await Promise.all([
+    db.events.where('status').equals('active').toArray(),
+    db.teams.toArray(),
+  ])
   const teamById = new Map(
     teams.map((team) => [
       team.id!,
@@ -233,13 +250,58 @@ async function loadPracticeMatchContext(): Promise<PracticeMatchContext> {
       },
     ]),
   )
+  const teamIdByNameKey = new Map(
+    Array.from(teamById.entries()).map(([teamId, team]) => [team.nameKey, teamId]),
+  )
   const eventsByStart = new Map<string, ScheduleEvent[]>()
-  for (const event of events) {
+  const addEvent = (event: ScheduleEvent) => {
     const start = event.start
-    if (!start) continue
+    if (!start) return
     const bucket = eventsByStart.get(start)
     if (bucket) bucket.push(event)
     else eventsByStart.set(start, [event])
+  }
+  for (const event of events) {
+    if (pendingSourceKeys.has(event.sourceKey)) continue
+    addEvent(event)
+  }
+  let syntheticTeamIdCounter = -1
+  let syntheticEventIdCounter = -1
+  for (const event of pendingEvents) {
+    const teamNameKey = normKey(event.teamName)
+    let teamId = teamIdByNameKey.get(teamNameKey)
+    if (teamId === undefined) {
+      teamId = syntheticTeamIdCounter--
+      teamIdByNameKey.set(teamNameKey, teamId)
+      teamById.set(teamId, {
+        name: event.teamName,
+        nameKey: teamNameKey,
+        ageGroupKey: normKey(ageGroupHint(event.teamName)),
+      })
+    }
+    addEvent({
+      id: syntheticEventIdCounter--,
+      sourceId: null,
+      sourceKey: event.sourceKey,
+      originalStart: event.start,
+      originalEnd: event.end,
+      teamId,
+      ageGroup: event.ageGroup,
+      type: event.type,
+      art: event.art,
+      opponent: event.opponent,
+      home: event.home,
+      location: event.location,
+      meetingPoint: event.meetingPoint,
+      departure: event.departure,
+      start: event.start,
+      end: event.end,
+      remarks: event.remarks,
+      availablePlayerCount: event.availablePlayerCount,
+      possiblePlayerCount: event.possiblePlayerCount,
+      status: 'active',
+      manual: false,
+    })
   }
   return { eventsByStart, teamById }
 }
