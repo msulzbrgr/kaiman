@@ -256,10 +256,10 @@ function matchesGroup(
     if (parsedTeamKey !== team.nameKey) return false
     // Accept when the ageGroup matches the team's derived key, OR the raw ageGroup
     // stored on the event (which may differ, e.g. "Erfassungsstufe" vs "U12").
-    const eventAgeGroupKey = normKey(event.ageGroup || '')
+    const eventAgeGroupKey = event.ageGroup ? normKey(event.ageGroup) : null
     return (
       parsedAgeGroupKey === team.ageGroupKey ||
-      (eventAgeGroupKey !== '' && parsedAgeGroupKey === eventAgeGroupKey)
+      (eventAgeGroupKey !== null && parsedAgeGroupKey === eventAgeGroupKey)
     )
   }
   if (parsedTeamKey) return parsedTeamKey === team.nameKey
