@@ -89,6 +89,7 @@ const SCHEDULE_FIELDS = [
   'start',
   'end',
   'remarks',
+  'ageGroup',
 ] as const satisfies readonly (keyof ScheduleEvent)[]
 
 export async function commitImport(
@@ -252,7 +253,14 @@ function matchesGroup(
   const team = context.teamById.get(event.teamId)
   if (!team) return false
   if (parsedTeamKey && parsedAgeGroupKey) {
-    return parsedTeamKey === team.nameKey && parsedAgeGroupKey === team.ageGroupKey
+    if (parsedTeamKey !== team.nameKey) return false
+    // Accept when the ageGroup matches the team's derived key, OR the raw ageGroup
+    // stored on the event (which may differ, e.g. "Erfassungsstufe" vs "U12").
+    const eventAgeGroupKey = normKey(event.ageGroup || '')
+    return (
+      parsedAgeGroupKey === team.ageGroupKey ||
+      (eventAgeGroupKey !== '' && parsedAgeGroupKey === eventAgeGroupKey)
+    )
   }
   if (parsedTeamKey) return parsedTeamKey === team.nameKey
   if (parsedAgeGroupKey) return parsedAgeGroupKey === team.ageGroupKey
