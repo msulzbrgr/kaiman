@@ -48,6 +48,7 @@ export interface ScheduleEvent {
   originalStart: string | null // imported baseline start (for reset/undo use-cases)
   originalEnd: string | null // imported baseline end (for reset/undo use-cases)
   teamId: number
+  ageGroup?: string // raw age-group label from the source (e.g. "U14" or "Erfassungsstufe")
   type: EventType
   art: string // Eistraining / Trockentraining / Freundschaft / ...
   opponent: string

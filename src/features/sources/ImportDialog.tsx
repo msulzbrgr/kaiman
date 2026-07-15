@@ -14,8 +14,21 @@ interface Staged {
   error?: string
 }
 
+type ParsedStage = Omit<Staged, 'preview'>
+
 const ACCEPTED_FILE_TYPES =
   '.xls,.xlsx,.html,.htm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/html'
+const EMPTY_IMPORT_PREVIEW: ImportPreview = {
+  fileName: '',
+  total: 0,
+  newEvents: 0,
+  updatedEvents: 0,
+  cancelledEvents: 0,
+  newTeams: [],
+  newPeople: [],
+  reusingSource: false,
+  unmatchedEntries: [],
+}
 
 async function readFile(file: File): Promise<{ text: string; buffer: ArrayBuffer }> {
   const buf = await file.arrayBuffer()
@@ -31,7 +44,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
 
   async function handleFiles(files: FileList | File[]) {
     const list = Array.from(files)
-    const next: Staged[] = []
+    const next: ParsedStage[] = []
     for (const file of list) {
       const { text, buffer } = await readFile(file)
       const importer = pickImporter(file.name, text)
@@ -43,13 +56,11 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
           kind: '',
           label: '',
           result: { events: [], teamNames: [], peopleNames: [] },
-          preview: {} as ImportPreview,
           error: 'Kein passender Import-Typ für diese Datei gefunden.',
         })
         continue
       }
       const result = await importer.parse(text, buffer)
-      const preview = await previewImport(result, importer.kind, file.name)
       next.push({
         fileName: file.name,
         text,
@@ -57,10 +68,24 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
         kind: importer.kind,
         label: file.name,
         result,
-        preview,
       })
     }
-    setStaged((prev) => [...prev.filter((s) => !next.some((n) => n.fileName === s.fileName)), ...next])
+    const combined = [
+      ...staged.filter((s) => !next.some((n) => n.fileName === s.fileName)),
+      ...next,
+    ]
+    const pendingRegularImports = combined
+      .filter((s) => !s.error && s.result.mode !== 'practice-update')
+      .map((s) => s.result)
+    const previewed = await Promise.all(
+      combined.map(async (stage) => ({
+        ...stage,
+        preview: stage.error
+          ? { ...EMPTY_IMPORT_PREVIEW, fileName: stage.fileName }
+          : await previewImport(stage.result, stage.kind, stage.fileName, pendingRegularImports),
+      })),
+    )
+    setStaged(previewed)
   }
 
   async function commitAll() {
@@ -144,9 +169,9 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
                       Dry Run: Kein bestehender Termin für diese Einträge gefunden:
                     </p>
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
-{s.preview.unmatchedEntries.map((entry, i) => (
-  <li key={`${entry}-${i}`} className="muted">{entry}</li>
-))}
+                       {s.preview.unmatchedEntries.map((entry, idx) => (
+                         <li key={`${s.fileName}-${idx}-${entry}`} className="muted">{entry}</li>
+                       ))}
                     </ul>
                   </div>
                 )}
